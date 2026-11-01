@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'app_icon.dart';
+import 'gun_cabinet_data.dart';
 import 'theme_accent.dart';
 import 'community_store.dart';
 import 'haptics.dart';
@@ -21,6 +22,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // 先从本机读回社区数据（带超时兜底，不阻塞启动太久），再进首页。
   await communityStore.init();
+  // 2.2.5 枪柜迁移：旧收藏的拥有枪幂等迁入枪柜自有存储（有标记则跳过，
+  // 失败不阻塞启动，下次再试；旧收藏数据原样保留）。
+  await migrateCabinetFromCollection();
   // 启动图标：固定黑底色，冷启动应用一次；不再跟随主题或平台亮度变化。
   await syncAppIcon();
   // 主题强调色：读回上次选择，读不到则默认铜色。
@@ -257,10 +261,14 @@ class _FloatingNavBar extends StatelessWidget {
     return ClipRRect(
           borderRadius: BorderRadius.circular(34),
           // 底改走 v2 真折射：着色器采样条后实时画面做边缘折射；
-          // 加载失败或不支持的设备自动退回原来的 blur 28 毛玻璃。
+          // 加载失败或不支持的设备自动退回 blur 40 毛玻璃。
+          // 2.2.5 加重：veil tint 0.16、fallback blur 40、药丸底色
+          // 不透明度上调，白天夜晚都比原来实、比原来糊；仍是
+          // 毛玻璃 + 折射，不改成实心不透明条，布局与图标不动。
           child: LiquidGlassBackdrop(
             radius: 34,
-            fallbackSigma: 28,
+            tint: 0.16,
+            fallbackSigma: 40,
             child: Stack(
               children: [
                 Container(
@@ -271,23 +279,23 @@ class _FloatingNavBar extends StatelessWidget {
                       end: Alignment.bottomCenter,
                       colors: dark
                           ? [
-                              const Color(0xFF000000).withValues(alpha: 0.62),
-                              const Color(0xFF0D0D0D).withValues(alpha: 0.42),
+                              const Color(0xFF000000).withValues(alpha: 0.78),
+                              const Color(0xFF0D0D0D).withValues(alpha: 0.60),
                             ]
                           : [
-                              Colors.white.withValues(alpha: 0.58),
-                              Colors.white.withValues(alpha: 0.32),
+                              Colors.white.withValues(alpha: 0.75),
+                              Colors.white.withValues(alpha: 0.55),
                             ],
                     ),
                     borderRadius: BorderRadius.circular(34),
                     border: Border.all(
                       color: dark
-                          ? Colors.white.withValues(alpha: 0.20)
-                          : Colors.white.withValues(alpha: 0.65),
+                          ? Colors.white.withValues(alpha: 0.28)
+                          : Colors.white.withValues(alpha: 0.75),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.10),
+                        color: Colors.black.withValues(alpha: 0.14),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),

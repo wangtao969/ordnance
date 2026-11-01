@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'i18n.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -67,15 +68,6 @@ List<String> parseTags(String content) {
   return tags;
 }
 
-/// 从正文里解析 @ID 提及：@xxx（到空白处为止）。
-List<String> parseMentions(String content) {
-  final ids = <String>[];
-  for (final m in RegExp(r'@([^\s@#]+)').allMatches(content)) {
-    final id = m.group(1)!;
-    if (!ids.contains(id)) ids.add(id);
-  }
-  return ids;
-}
 
 /// 把文本里的敏感词替换为等长星号（长词优先，避免短词先切坏长词）。
 String maskSensitiveWords(String text) {
@@ -105,12 +97,14 @@ class CommunityAccount {
   bool get isFounder => id == CommunityStore.founderId;
 
   /// 资料页展示的身份：创始用户 / 管理员 / 版主 / 普通用户。
-  String get displayRole {
-    if (isFounder) return '创始用户';
-    if (role == 'admin') return '管理员';
-    if (role == 'moderator') return '版主';
-    return '普通用户';
+  String get roleKey {
+    if (isFounder) return 'community_role_founder';
+    if (role == 'admin') return 'community_role_admin';
+    if (role == 'moderator') return 'community_role_moderator';
+    return 'community_role_user';
   }
+
+  String get displayRole => tr(roleKey);
   /// 账号状态：active 正常 / muted 禁言（不能发帖评论）/ banned 封禁（不能发帖评论）。
   String status;
   /// 禁言到期时间：null 表示永久禁言；到期后按正常账号处理，无需手动解除。
@@ -208,15 +202,17 @@ class CommunityAccount {
   int get xpNeedLevel => xpForNextLevel(level);
 
   /// 段位名与配色：铁灰 1–10 / 铜 11–20 / 银 21–35 / 金 36–48 / 钛 49–55 / 曜石 56–60。
-  String get tierName {
+  String get tierKey {
     final lv = level;
-    if (lv <= 10) return '铁灰';
-    if (lv <= 20) return '铜';
-    if (lv <= 35) return '银';
-    if (lv <= 48) return '金';
-    if (lv <= 55) return '钛';
-    return '曜石';
+    if (lv <= 10) return 'tier_iron';
+    if (lv <= 20) return 'tier_copper';
+    if (lv <= 35) return 'tier_silver';
+    if (lv <= 48) return 'tier_gold';
+    if (lv <= 55) return 'tier_titanium';
+    return 'tier_obsidian';
   }
+
+  String get tierName => tr(tierKey);
 
   Color get tierColor {
     final lv = level;
@@ -554,6 +550,15 @@ class CommunityPost {
   bool reported;
   int reportCount;
   final List<String> reportReasons;
+  /// 视频附件：应用沙盒文件路径（'' = 无）；图片走 images 字节链路，
+  /// 视频不进 JSON 字节（体积大），只存路径 + 系统播放器打开。
+  String videoPath;
+  /// 发帖时附加的定位文字（'' = 无）。
+  String location;
+  /// 发帖时附加的天气快照文字（'' = 无）。
+  String weather;
+  /// 成就自动动态标记：'' = 普通动态；非空 = 成就 id，内容为成就获得动态。
+  String achievement;
 
   CommunityPost({
     required this.id,
@@ -575,6 +580,10 @@ class CommunityPost {
     this.reported = false,
     this.reportCount = 0,
     List<String>? reportReasons,
+    this.videoPath = '',
+    this.location = '',
+    this.weather = '',
+    this.achievement = '',
   })  : images = images ?? [],
         likedBy = likedBy ?? <String>{},
         favoritedBy = favoritedBy ?? <String>{},
@@ -607,6 +616,10 @@ class CommunityPost {
         'reported': reported,
         'reportCount': reportCount,
         'reportReasons': reportReasons,
+        'videoPath': videoPath,
+        'location': location,
+        'weather': weather,
+        'achievement': achievement,
       };
 
   static CommunityPost fromJson(Map<String, dynamic> j) => CommunityPost(
@@ -636,6 +649,10 @@ class CommunityPost {
         reportCount: (j['reportCount'] as num?)?.toInt() ??
             (j['reported'] == true ? 1 : 0),
         reportReasons: (j['reportReasons'] as List? ?? []).cast<String>(),
+        videoPath: j['videoPath'] as String? ?? '',
+        location: j['location'] as String? ?? '',
+        weather: j['weather'] as String? ?? '',
+        achievement: j['achievement'] as String? ?? '',
       );
 }
 
@@ -734,6 +751,7 @@ class PostDraft {
 
 /// 单枪精通等级：0 未登记 / 1 了解 / 2 熟悉 / 3 上手 / 4 精通 / 5 权威（本机版不开放）。
 const masteryNames = ['', '了解', '熟悉', '上手', '精通', '权威'];
+const masteryKeys = ['', 'mastery_1', 'mastery_2', 'mastery_3', 'mastery_4', 'mastery_5'];
 
 /// 勋章定义：条件用函数算，界面直接拿已获得集合渲染勋章墙。
 class MedalDef {
@@ -741,6 +759,10 @@ class MedalDef {
   final String name;
   final String desc;
   final String group;
+  final String nameKey;
+  final String descKey;
+  final String groupKey;
+  final String? category; // 仅品类勋章：生成时的品类（中文数据值），显示时走 trCategory
   final String rarity; // N / R / SR / SSR
   final bool Function(CommunityStore store, CommunityAccount account) test;
   const MedalDef({
@@ -748,6 +770,10 @@ class MedalDef {
     required this.name,
     required this.desc,
     required this.group,
+    required this.nameKey,
+    required this.descKey,
+    required this.groupKey,
+    this.category,
     required this.rarity,
     required this.test,
   });
@@ -790,6 +816,9 @@ final medalCatalog = <MedalDef>[
       name: '初来乍到',
       desc: '完成第一次每日签到',
       group: '签到',
+      nameKey: 'medal_checkin_1_name',
+      descKey: 'medal_checkin_1_desc',
+      groupKey: 'medal_group_checkin',
       rarity: 'N',
       test: (s, a) => a.checkInDates.isNotEmpty),
   MedalDef(
@@ -797,6 +826,9 @@ final medalCatalog = <MedalDef>[
       name: '持之以恒',
       desc: '连续签到 3 天',
       group: '签到',
+      nameKey: 'medal_checkin_3_name',
+      descKey: 'medal_checkin_3_desc',
+      groupKey: 'medal_group_checkin',
       rarity: 'R',
       test: (s, a) => a.checkInStreak >= 3),
   MedalDef(
@@ -804,6 +836,9 @@ final medalCatalog = <MedalDef>[
       name: '一周不辍',
       desc: '连续签到 7 天',
       group: '签到',
+      nameKey: 'medal_checkin_7_name',
+      descKey: 'medal_checkin_7_desc',
+      groupKey: 'medal_group_checkin',
       rarity: 'SR',
       test: (s, a) => a.checkInStreak >= 7),
   MedalDef(
@@ -811,6 +846,9 @@ final medalCatalog = <MedalDef>[
       name: '月度全勤',
       desc: '连续签到 30 天',
       group: '签到',
+      nameKey: 'medal_checkin_30_name',
+      descKey: 'medal_checkin_30_desc',
+      groupKey: 'medal_group_checkin',
       rarity: 'SSR',
       test: (s, a) => a.checkInStreak >= 30),
   MedalDef(
@@ -818,6 +856,9 @@ final medalCatalog = <MedalDef>[
       name: '第一把',
       desc: '收藏柜登记第 1 把枪',
       group: '收藏',
+      nameKey: 'medal_collect_1_name',
+      descKey: 'medal_collect_1_desc',
+      groupKey: 'medal_group_collect',
       rarity: 'N',
       test: (s, a) => a.collection.length >= 1),
   MedalDef(
@@ -825,6 +866,9 @@ final medalCatalog = <MedalDef>[
       name: '小有规模',
       desc: '收藏柜登记 5 把枪',
       group: '收藏',
+      nameKey: 'medal_collect_5_name',
+      descKey: 'medal_collect_5_desc',
+      groupKey: 'medal_group_collect',
       rarity: 'R',
       test: (s, a) => a.collection.length >= 5),
   MedalDef(
@@ -832,6 +876,9 @@ final medalCatalog = <MedalDef>[
       name: '初具枪柜',
       desc: '收藏柜登记 20 把枪',
       group: '收藏',
+      nameKey: 'medal_collect_20_name',
+      descKey: 'medal_collect_20_desc',
+      groupKey: 'medal_group_collect',
       rarity: 'SR',
       test: (s, a) => a.collection.length >= 20),
   MedalDef(
@@ -839,6 +886,9 @@ final medalCatalog = <MedalDef>[
       name: '收藏家',
       desc: '收藏柜登记 50 把枪',
       group: '收藏',
+      nameKey: 'medal_collect_50_name',
+      descKey: 'medal_collect_50_desc',
+      groupKey: 'medal_group_collect',
       rarity: 'SSR',
       test: (s, a) => a.collection.length >= 50),
   MedalDef(
@@ -846,6 +896,9 @@ final medalCatalog = <MedalDef>[
       name: '首帖',
       desc: '发表第 1 条动态',
       group: '发帖',
+      nameKey: 'medal_post_1_name',
+      descKey: 'medal_post_1_desc',
+      groupKey: 'medal_group_post',
       rarity: 'N',
       test: (s, a) => s.posts.any((p) => p.authorId == a.id)),
   MedalDef(
@@ -853,6 +906,9 @@ final medalCatalog = <MedalDef>[
       name: '话痨',
       desc: '发表 10 条动态',
       group: '发帖',
+      nameKey: 'medal_post_10_name',
+      descKey: 'medal_post_10_desc',
+      groupKey: 'medal_group_post',
       rarity: 'R',
       test: (s, a) =>
           s.posts.where((p) => p.authorId == a.id).length >= 10),
@@ -861,6 +917,9 @@ final medalCatalog = <MedalDef>[
       name: '笔耕不辍',
       desc: '发表 50 条动态',
       group: '发帖',
+      nameKey: 'medal_post_50_name',
+      descKey: 'medal_post_50_desc',
+      groupKey: 'medal_group_post',
       rarity: 'SR',
       test: (s, a) =>
           s.posts.where((p) => p.authorId == a.id).length >= 50),
@@ -869,6 +928,9 @@ final medalCatalog = <MedalDef>[
       name: '初受认可',
       desc: '累计获赞 10 次',
       group: '获赞',
+      nameKey: 'medal_like_10_name',
+      descKey: 'medal_like_10_desc',
+      groupKey: 'medal_group_like',
       rarity: 'N',
       test: (s, a) => _likesReceived(s, a) >= 10),
   MedalDef(
@@ -876,6 +938,9 @@ final medalCatalog = <MedalDef>[
       name: '广受欢迎',
       desc: '累计获赞 50 次',
       group: '获赞',
+      nameKey: 'medal_like_50_name',
+      descKey: 'medal_like_50_desc',
+      groupKey: 'medal_group_like',
       rarity: 'R',
       test: (s, a) => _likesReceived(s, a) >= 50),
   MedalDef(
@@ -883,6 +948,9 @@ final medalCatalog = <MedalDef>[
       name: '社区明星',
       desc: '累计获赞 200 次',
       group: '获赞',
+      nameKey: 'medal_like_200_name',
+      descKey: 'medal_like_200_desc',
+      groupKey: 'medal_group_like',
       rarity: 'SR',
       test: (s, a) => _likesReceived(s, a) >= 200),
   MedalDef(
@@ -890,6 +958,9 @@ final medalCatalog = <MedalDef>[
       name: '首发命中',
       desc: '记录第 1 条靶场成绩',
       group: '靶场',
+      nameKey: 'medal_range_1_name',
+      descKey: 'medal_range_1_desc',
+      groupKey: 'medal_group_range',
       rarity: 'N',
       test: (s, a) => a.rangeScores.isNotEmpty),
   MedalDef(
@@ -897,6 +968,9 @@ final medalCatalog = <MedalDef>[
       name: '靶场常客',
       desc: '记录 10 条靶场成绩',
       group: '靶场',
+      nameKey: 'medal_range_10_name',
+      descKey: 'medal_range_10_desc',
+      groupKey: 'medal_group_range',
       rarity: 'R',
       test: (s, a) => a.rangeScores.length >= 10),
   MedalDef(
@@ -904,6 +978,9 @@ final medalCatalog = <MedalDef>[
       name: '神射手',
       desc: '记录 50 条靶场成绩',
       group: '靶场',
+      nameKey: 'medal_range_50_name',
+      descKey: 'medal_range_50_desc',
+      groupKey: 'medal_group_range',
       rarity: 'SR',
       test: (s, a) => a.rangeScores.length >= 50),
   for (final c in [
@@ -921,6 +998,10 @@ final medalCatalog = <MedalDef>[
         name: '$c收藏家',
         desc: '收藏柜登记任意 1 把$c',
         group: '品类',
+      nameKey: 'medal_cat_name',
+      descKey: 'medal_cat_desc',
+      groupKey: 'medal_group_category',
+      category: '$c',
         rarity: 'R',
         test: (s, a) => a.collection.any((i) => i.category == c)),
   MedalDef(
@@ -928,6 +1009,9 @@ final medalCatalog = <MedalDef>[
       name: '挑战新手',
       desc: '完成 1 项本期挑战',
       group: '挑战',
+      nameKey: 'medal_challenge_1_name',
+      descKey: 'medal_challenge_1_desc',
+      groupKey: 'medal_group_challenge',
       rarity: 'SR',
       test: (s, a) => s.challengeDone(a) >= 1),
   MedalDef(
@@ -935,6 +1019,9 @@ final medalCatalog = <MedalDef>[
       name: '夜猫子',
       desc: '在 0 点到 5 点之间发过动态（隐藏勋章）',
       group: '彩蛋',
+      nameKey: 'medal_egg_night_name',
+      descKey: 'medal_egg_night_desc',
+      groupKey: 'medal_group_egg',
       rarity: 'SSR',
       test: (s, a) => s.posts
           .any((p) => p.authorId == a.id && p.time.hour < 5)),
@@ -943,6 +1030,9 @@ final medalCatalog = <MedalDef>[
       name: '有图有真相',
       desc: '发表过带图片的动态（隐藏勋章）',
       group: '彩蛋',
+      nameKey: 'medal_egg_photo_name',
+      descKey: 'medal_egg_photo_desc',
+      groupKey: 'medal_group_egg',
       rarity: 'SSR',
       test: (s, a) => s.posts
           .any((p) => p.authorId == a.id && p.images.isNotEmpty)),
@@ -954,11 +1044,15 @@ class ChallengeDef {
   final String id;
   final String title;
   final String desc;
+  final String titleKey;
+  final String descKey;
   final bool Function(CommunityStore s, CommunityAccount a) test;
   const ChallengeDef(
       {required this.id,
       required this.title,
       required this.desc,
+      required this.titleKey,
+      required this.descKey,
       required this.test});
 }
 
@@ -967,32 +1061,44 @@ final challengeCatalog = <ChallengeDef>[
       id: 'challenge_collect_1',
       title: '登记第一把藏枪',
       desc: '在收藏柜登记 1 把枪',
+      titleKey: 'challenge_collect_1_title',
+      descKey: 'challenge_collect_1_desc',
       test: (s, a) => a.collection.isNotEmpty),
   ChallengeDef(
       id: 'challenge_range_1',
       title: '第一次打靶记录',
       desc: '记录 1 条靶场成绩',
+      titleKey: 'challenge_range_1_title',
+      descKey: 'challenge_range_1_desc',
       test: (s, a) => a.rangeScores.isNotEmpty),
   ChallengeDef(
       id: 'challenge_post_1',
       title: '发表第一条动态',
       desc: '发表 1 条动态',
+      titleKey: 'challenge_post_1_title',
+      descKey: 'challenge_post_1_desc',
       test: (s, a) => s.posts.any((p) => p.authorId == a.id)),
   ChallengeDef(
       id: 'challenge_streak_3',
       title: '连签 3 天',
       desc: '连续签到 3 天',
+      titleKey: 'challenge_streak_3_title',
+      descKey: 'challenge_streak_3_desc',
       test: (s, a) => a.checkInStreak >= 3),
   ChallengeDef(
       id: 'challenge_categories_3',
       title: '横跨 3 个品类',
       desc: '收藏柜覆盖 3 个不同品类',
+      titleKey: 'challenge_categories_3_title',
+      descKey: 'challenge_categories_3_desc',
       test: (s, a) =>
           a.collection.map((c) => c.category).toSet().length >= 3),
   ChallengeDef(
       id: 'challenge_collect_10',
       title: '收藏 10 把',
       desc: '收藏柜登记 10 把枪',
+      titleKey: 'challenge_collect_10_title',
+      descKey: 'challenge_collect_10_desc',
       test: (s, a) => a.collection.length >= 10),
 ];
 
@@ -1034,8 +1140,6 @@ class CommunityStore extends ChangeNotifier {
   PostDraft? draft;
 
   /// 通知开关：系统 / 互动 / 私信三类可独立开关。
-  bool notifySystem = true;
-  bool notifyInteraction = true;
   bool notifyDm = true;
 
   /// 被管理员关闭的板块：关闭后不再出现在板块入口与发帖板块选择里。
@@ -1060,8 +1164,8 @@ class CommunityStore extends ChangeNotifier {
       id: _nextId(),
       targetAccountId: '',
       kind: 'system',
-      title: '欢迎来到 Gun’s Map 社区',
-      body: '在这里晒装备、聊复装、记靶场成绩、攒勋章；账号、帖子、收藏都保存在本机。',
+      title: tr('notif_welcome_title'),
+      body: tr('notif_welcome_body'),
       time: DateTime.now(),
     ));
   }
@@ -1090,8 +1194,6 @@ class CommunityStore extends ChangeNotifier {
         draft = j['draft'] == null
             ? null
             : PostDraft.fromJson(j['draft'] as Map<String, dynamic>);
-        notifySystem = j['notifySystem'] as bool? ?? true;
-        notifyInteraction = j['notifyInteraction'] as bool? ?? true;
         notifyDm = j['notifyDm'] as bool? ?? true;
         disabledBoards.clear();
         disabledBoards.addAll(
@@ -1122,8 +1224,6 @@ class CommunityStore extends ChangeNotifier {
         'notifications': notifications.map((n) => n.toJson()).toList(),
         'dms': dms.map((d) => d.toJson()).toList(),
         'draft': draft?.toJson(),
-        'notifySystem': notifySystem,
-        'notifyInteraction': notifyInteraction,
         'notifyDm': notifyDm,
         'disabledBoards': disabledBoards.toList(),
         'addedSensitiveWords': addedSensitiveWords,
@@ -1156,6 +1256,44 @@ class CommunityStore extends ChangeNotifier {
   List<MedalDef> earnedMedals(CommunityAccount a) =>
       medalCatalog.where((m) => m.test(this, a)).toList();
 
+  /// 成就自动动态：新获得的勋章各生成一条公开动态（标题含勋章名，
+  /// 内容为勋章说明，achievement 字段标成就 id）；直接插入动态列表，
+  /// 不走 createPost、不授发帖 XP、不发通知。调用方随后 notifyListeners。
+  void _postNewAchievements(CommunityAccount a, Set<String> beforeIds) {
+    final after = earnedMedals(a).map((m) => m.id).toSet();
+    for (final id in after.difference(beforeIds)) {
+      MedalDef? medal;
+      for (final m in medalCatalog) {
+        if (m.id == id) medal = m;
+      }
+      if (medal == null) continue;
+      final medalName = medal.category == null
+          ? tr(medal.nameKey)
+          : trCategory(medal.category!) + tr('medal_cat_name_suffix');
+      final medalDesc = medal.category == null
+          ? tr(medal.descKey)
+          : tr('medal_cat_desc_prefix') + trCategory(medal.category!);
+      posts.insert(
+        0,
+        CommunityPost(
+          id: _nextId(),
+          title: tr('achievement_earned_prefix') +
+              medalName +
+              tr('achievement_earned_suffix'),
+          content: medalDesc,
+          board: '综合',
+          authorId: a.id,
+          authorNickname: a.nickname,
+          authorColor: a.avatarColor,
+          authorAvatar: a.avatarBytes,
+          authorFrame: a.avatarFrame,
+          time: DateTime.now(),
+          achievement: id,
+        ),
+      );
+    }
+  }
+
   /// 单枪精通等级（0–4，本机版不开放 5 级权威）。
   int masteryForGun(CommunityAccount a, String gunName) {
     CollectionItem? item;
@@ -1177,16 +1315,6 @@ class CommunityStore extends ChangeNotifier {
     return lv;
   }
 
-  /// 每日签到：已签返回 -1，否则 +10 经验并返回到账数。
-  int checkIn() {
-    final me = current;
-    if (me == null || me.checkedInToday) return -1;
-    me.checkInDates.add(CommunityAccount.dateKey(DateTime.now()));
-    final granted = me.addXp(10);
-    notifyListeners();
-    return granted;
-  }
-
   void addCollectionItem(CollectionItem item) {
     final me = current;
     if (me == null) return;
@@ -1194,7 +1322,6 @@ class CommunityStore extends ChangeNotifier {
     me.collection
         .removeWhere((c) => c.gunName == item.gunName && c.kind == item.kind);
     me.collection.insert(0, item);
-    me.addXp(3);
     notifyListeners();
   }
 
@@ -1236,7 +1363,6 @@ class CommunityStore extends ChangeNotifier {
     final me = current;
     if (me == null) return;
     me.rangeScores.insert(0, score);
-    me.addXp(5);
     notifyListeners();
   }
 
@@ -1334,7 +1460,7 @@ class CommunityStore extends ChangeNotifier {
     String invitedBy = '',
   }) {
     if (nickname.isEmpty || password.isEmpty) {
-      return '昵称和密码都不能为空';
+      return tr('store_err_empty_nick_pass');
     }
     final id = nextUserId;
     final account = CommunityAccount(
@@ -1362,7 +1488,7 @@ class CommunityStore extends ChangeNotifier {
   String? login({required String id, required String password}) {
     final account = findAccount(id);
     if (account == null || account.password != password) {
-      return 'ID 或密码不对';
+      return tr('err_login');
     }
     current = account;
     notifyListeners();
@@ -1380,21 +1506,24 @@ class CommunityStore extends ChangeNotifier {
     required String content,
     required String board,
     required List<Uint8List> images,
+    String location = '',
+    String weather = '',
+    String videoPath = '',
   }) {
     final author = current;
-    if (author == null) return '请先登录';
+    if (author == null) return tr('store_err_not_logged');
     if (!author.isFounder && author.status == 'banned') {
-      return '账号已被封禁';
+      return tr('store_err_banned');
     }
     if (!author.isFounder && author.mutedEffective) {
-      return '账号已被禁言';
+      return tr('store_err_muted');
     }
-    if (disabledBoards.contains(board)) return '该板块已关闭';
+    if (disabledBoards.contains(board)) return tr('store_err_board_closed');
     final maskedTitle = maskSensitiveWords(title);
     final maskedContent = maskSensitiveWords(content);
     final post = CommunityPost(
       id: _nextId(),
-      title: maskedTitle.trim().isEmpty ? '无标题' : maskedTitle.trim(),
+      title: maskedTitle.trim().isEmpty ? tr('post_no_title') : maskedTitle.trim(),
       content: maskedContent.trim(),
       board: board,
       authorId: author.id,
@@ -1404,25 +1533,19 @@ class CommunityStore extends ChangeNotifier {
       authorFrame: author.avatarFrame,
       time: DateTime.now(),
       images: images,
+      location: location,
+      weather: weather,
+      videoPath: videoPath,
     );
     posts.insert(0, post);
     draft = null;
     // 经验：内容满 20 字才算（水贴不计）；当日首条 +5，之后 +2。
+    // 发帖后若新获勋章，各生成一条成就动态（不授发帖 XP）。
     if (maskedContent.trim().length >= 20) {
       final firstToday = _postsToday(this, author) <= 1;
+      final beforeMedals = earnedMedals(author).map((m) => m.id).toSet();
       author.addXp(firstToday ? 5 : 2);
-    }
-    // @ 到的本机账号收到互动通知。
-    for (final mentionedId in parseMentions(maskedContent)) {
-      if (mentionedId != author.id && findAccount(mentionedId) != null) {
-        _notify(
-          targetAccountId: mentionedId,
-          kind: 'interaction',
-          title: '@了你',
-          body: '${author.nickname} 在帖子《${post.title}》里 @了你',
-          postId: post.id,
-        );
-      }
+      _postNewAchievements(author, beforeMedals);
     }
     notifyListeners();
     return null;
@@ -1435,18 +1558,15 @@ class CommunityStore extends ChangeNotifier {
       post.likedBy.remove(me.id);
     } else {
       post.likedBy.add(me.id);
-      // 获赞给作者 +1（精华不直接给经验，防自授）。
+      // 获赞给作者 +1（精华不直接给经验，防自授）；作者新获勋章则生成成就动态。
       if (post.authorId != me.id) {
-        findAccount(post.authorId)?.addXp(1);
-      }
-      if (post.authorId != me.id) {
-        _notify(
-          targetAccountId: post.authorId,
-          kind: 'interaction',
-          title: '有人点赞了你的帖子',
-          body: '${me.nickname} 点赞了《${post.title}》',
-          postId: post.id,
-        );
+        final author = findAccount(post.authorId);
+        if (author != null) {
+          final beforeMedals =
+              earnedMedals(author).map((m) => m.id).toSet();
+          author.addXp(1);
+          _postNewAchievements(author, beforeMedals);
+        }
       }
     }
     notifyListeners();
@@ -1466,9 +1586,9 @@ class CommunityStore extends ChangeNotifier {
   /// 评论：返回敏感词或 null。
   String? addComment(CommunityPost post, String content) {
     final me = current;
-    if (me == null) return '请先登录';
-    if (!me.isFounder && me.status == 'banned') return '账号已被封禁';
-    if (!me.isFounder && me.mutedEffective) return '账号已被禁言';
+    if (me == null) return tr('store_err_not_logged');
+    if (!me.isFounder && me.status == 'banned') return tr('store_err_banned');
+    if (!me.isFounder && me.mutedEffective) return tr('store_err_muted');
     final masked = maskSensitiveWords(content);
     post.comments.add(CommunityComment(
       id: _nextId(),
@@ -1480,30 +1600,10 @@ class CommunityStore extends ChangeNotifier {
       content: masked.trim(),
       time: DateTime.now(),
     ));
-    // 经验：当日头 3 条评论 +2，之后 +1。
+    // 经验：当日头 3 条评论 +2，之后 +1；评论后新获勋章则生成成就动态。
+    final beforeMedals = earnedMedals(me).map((m) => m.id).toSet();
     me.addXp(_commentsToday(this, me) <= 3 ? 2 : 1);
-    if (post.authorId != me.id) {
-      _notify(
-        targetAccountId: post.authorId,
-        kind: 'interaction',
-        title: '你的帖子有新回复',
-        body: '${me.nickname} 回复了《${post.title}》',
-        postId: post.id,
-      );
-    }
-    for (final mentionedId in parseMentions(masked)) {
-      if (mentionedId != me.id &&
-          mentionedId != post.authorId &&
-          findAccount(mentionedId) != null) {
-        _notify(
-          targetAccountId: mentionedId,
-          kind: 'interaction',
-          title: '@了你',
-          body: '${me.nickname} 在评论里 @了你',
-          postId: post.id,
-        );
-      }
-    }
+    _postNewAchievements(me, beforeMedals);
     notifyListeners();
     return null;
   }
@@ -1552,7 +1652,7 @@ class CommunityStore extends ChangeNotifier {
       0,
       AdminLogEntry(
         time: DateTime.now().toIso8601String(),
-        actor: me == null ? '系统' : '${me.nickname}（ID ${me.id}）',
+        actor: me == null ? tr('store_actor_system') : '${me.nickname}（ID ${me.id}）',
         action: action,
         target: target,
       ),
@@ -1568,10 +1668,10 @@ class CommunityStore extends ChangeNotifier {
       .toList();
 
   String? addSensitiveWord(String word) {
-    if (!isAdmin) return '只有管理员可以管理敏感词';
+    if (!isAdmin) return tr('store_err_admin_words');
     final w = word.trim();
-    if (w.isEmpty) return '词不能为空';
-    if (effectiveSensitiveWords.contains(w)) return '该词已在词库里';
+    if (w.isEmpty) return tr('store_err_word_empty');
+    if (effectiveSensitiveWords.contains(w)) return tr('store_err_word_dup');
     addedSensitiveWords.add(w);
     _logAdmin('新增敏感词', w);
     notifyListeners();
@@ -1579,7 +1679,7 @@ class CommunityStore extends ChangeNotifier {
   }
 
   String? removeSensitiveWord(String word) {
-    if (!isAdmin) return '只有管理员可以管理敏感词';
+    if (!isAdmin) return tr('store_err_admin_words');
     if (addedSensitiveWords.remove(word)) {
       _logAdmin('删除敏感词', word);
     } else if (sensitiveWords.contains(word) &&
@@ -1587,7 +1687,7 @@ class CommunityStore extends ChangeNotifier {
       removedSensitiveWords.add(word);
       _logAdmin('删除敏感词', word);
     } else {
-      return '词库里没有这个词';
+      return tr('store_err_word_missing');
     }
     notifyListeners();
     return null;
@@ -1596,15 +1696,15 @@ class CommunityStore extends ChangeNotifier {
   /// 人员管理（仅管理员）：改角色 / 改状态；不能改自己，不能改初始管理员。
   /// 返回 null 表示成功，否则返回原因。
   String? setUserRole(CommunityAccount target, String role) {
-    if (!isAdmin) return '只有管理员可以管理权限';
-    if (target.id == current?.id) return '不能修改自己的权限';
+    if (!isAdmin) return tr('store_err_admin_perms');
+    if (target.id == current?.id) return tr('store_err_self');
     if (!isFounder &&
         (target.id == adminBootstrapId || target.id == legacyAdminId)) {
-      return '不能修改初始管理员';
+      return tr('store_err_founder');
     }
     target.role = role;
     _logAdmin(
-        '设为${role == 'admin' ? '管理员' : role == 'moderator' ? '版主' : '普通用户'}',
+        tr('admin_set_role_prefix') + tr(role == 'admin' ? 'community_role_admin' : role == 'moderator' ? 'community_role_moderator' : 'community_role_user'),
         '${target.nickname}（ID ${target.id}）');
     notifyListeners();
     return null;
@@ -1612,11 +1712,11 @@ class CommunityStore extends ChangeNotifier {
 
   String? setUserStatus(CommunityAccount target, String status,
       {DateTime? mutedUntil}) {
-    if (!isAdmin) return '只有管理员可以管理权限';
-    if (target.id == current?.id) return '不能修改自己的权限';
+    if (!isAdmin) return tr('store_err_admin_perms');
+    if (target.id == current?.id) return tr('store_err_self');
     if (!isFounder &&
         (target.id == adminBootstrapId || target.id == legacyAdminId)) {
-      return '不能修改初始管理员';
+      return tr('store_err_founder');
     }
     target.status = status;
     target.mutedUntil = status == 'muted' ? mutedUntil : null;
@@ -1686,12 +1786,6 @@ class CommunityStore extends ChangeNotifier {
       me.followingIds.remove(targetId);
     } else {
       me.followingIds.add(targetId);
-      _notify(
-        targetAccountId: targetId,
-        kind: 'interaction',
-        title: '有人关注了你',
-        body: '${me.nickname} 关注了你',
-      );
     }
     notifyListeners();
   }
@@ -1710,8 +1804,8 @@ class CommunityStore extends ChangeNotifier {
     _notify(
       targetAccountId: toId,
       kind: 'dm',
-      title: '新私信',
-      body: '${me.nickname}：${masked.trim()}',
+      title: tr('notif_dm_title'),
+      body: '${me.nickname}' + tr('notif_dm_sep') + masked.trim(),
     );
     notifyListeners();
   }
@@ -1723,8 +1817,6 @@ class CommunityStore extends ChangeNotifier {
     required String body,
     String? postId,
   }) {
-    if (kind == 'system' && !notifySystem) return;
-    if (kind == 'interaction' && !notifyInteraction) return;
     if (kind == 'dm' && !notifyDm) return;
     notifications.insert(
       0,
@@ -1740,14 +1832,14 @@ class CommunityStore extends ChangeNotifier {
     );
   }
 
-  void markNotificationRead(CommunityNotification n) {
-    n.read = true;
-    notifyListeners();
-  }
-
-  void markAllNotificationsRead(String accountId) {
+  /// 私信未读清零：打开私信列表时把本人的 dm 类通知标已读；
+  /// 通知中心已删，dm 未读角标只走这一条路。
+  void markDmNotificationsRead() {
+    final me = current;
+    if (me == null) return;
     for (final n in notifications) {
-      if (n.targetAccountId == accountId || n.targetAccountId.isEmpty) {
+      if (n.kind == 'dm' &&
+          (n.targetAccountId == me.id || n.targetAccountId.isEmpty)) {
         n.read = true;
       }
     }
@@ -1811,13 +1903,16 @@ class CommunityStore extends ChangeNotifier {
   }
 
   static String formatTime(DateTime t) {
-    return '${t.month}月${t.day}日 ${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+    final hm = '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+    if (localeNotifier.value == localeEn) return '${t.month}/${t.day} $hm';
+    return '${t.month}月${t.day}日 $hm';
   }
 }
 
 /// 头像显示：有上传头像用图片，没有则用颜色圆 + 昵称首字。
 /// 社区头像：有照片用照片；无照片统一用灰底人形描边默认头像（微信式），
-/// 不再用颜色 + 首字头像。frame 为头像边框（'' / copper / gold / rainbow）。
+/// 不再用颜色 + 首字头像。frame 为头像边框（'' / copper / gold / rainbow /
+/// silver / emerald / sapphire / violet / crimson / gunmetal）。
 /// 特殊权限用户（创始 / 管理员 / 版主）的头像右下角挂红色 V 标（X 式认证标，改红色）。
 bool isSpecialAccount(CommunityAccount a) =>
     a.isFounder || a.role == 'admin' || a.role == 'moderator';
@@ -1866,6 +1961,13 @@ Widget communityAvatar({
         Colors.blue,
         Colors.purple,
       ],
+    // 2.2.5 新增 6 种：金属/宝石质感渐变，避免纯原色大面积刺眼。
+    'silver' => [const Color(0xFFE9EBEE), const Color(0xFF8E979F)],
+    'emerald' => [const Color(0xFF7ED3A6), const Color(0xFF0E6B4A)],
+    'sapphire' => [const Color(0xFF7AA5E8), const Color(0xFF1D3F8F)],
+    'violet' => [const Color(0xFFB79CED), const Color(0xFF5B2D90)],
+    'crimson' => [const Color(0xFFDE6B7A), const Color(0xFF8E1220)],
+    'gunmetal' => [const Color(0xFF8A949E), const Color(0xFF2F363E)],
     _ => null,
   };
   if (colors == null) return _withVerified(core, radius, verified);

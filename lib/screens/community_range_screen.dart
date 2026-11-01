@@ -7,6 +7,7 @@ import '../models.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/glass_dialog.dart';
 import '../community_store.dart';
+import '../gun_cabinet_data.dart';
 import '../i18n.dart';
 import '../widgets/app_top_bar.dart';
 import '../widgets/community_theme.dart';
@@ -18,7 +19,7 @@ import 'range_tools_screen.dart';
 
 /// 靶场成绩：分组、距离、发数，绑定枪种；成绩直接喂靶场勋章。
 /// 顶部统计卡 + 按枪筛选 + 结构化卡片，成绩不再是一长串字；
-/// 录入框里可勾选同步：从弹药库存扣发数、计入藏枪已打发数。
+/// 录入框里可勾选同步：从弹药库存扣发数、计入枪柜已打发数。
 class CommunityRangeScreen extends StatefulWidget {
   const CommunityRangeScreen({super.key});
 
@@ -36,6 +37,59 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
     }
     if (s.endsWith('.')) s = s.substring(0, s.length - 1);
     return s;
+  }
+
+  /// 姿势 / 靶型 / 天气显示映射：存量仍是中文原文（老记录不断裂），
+  /// 只换显示；自由填写的天气文字不在固定表里，原样显示。
+  String _trPosition(String v) {
+    switch (v) {
+      case '站姿':
+        return tr('range_position_stand');
+      case '跪姿':
+        return tr('range_position_kneel');
+      case '卧姿':
+        return tr('range_position_prone');
+      case '依托':
+        return tr('range_position_supported');
+      case '坐姿':
+        return tr('range_position_sitting');
+      default:
+        return v;
+    }
+  }
+
+  String _trTarget(String v) {
+    switch (v) {
+      case '胸环靶':
+        return tr('range_target_chest');
+      case '精度靶':
+        return tr('range_target_precision');
+      case '人形靶':
+        return tr('range_target_silhouette');
+      case '钢靶':
+        return tr('range_target_steel');
+      case '其他':
+        return tr('range_target_other');
+      default:
+        return v;
+    }
+  }
+
+  String _trWeather(String v) {
+    switch (v) {
+      case '晴':
+        return tr('range_weather_sunny');
+      case '阴':
+        return tr('range_weather_cloudy');
+      case '雨':
+        return tr('range_weather_rainy');
+      case '雪':
+        return tr('range_weather_snowy');
+      case '室内':
+        return tr('range_weather_indoor');
+      default:
+        return v;
+    }
   }
 
   Future<void> _addScore(BuildContext context,
@@ -67,7 +121,7 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
       }
     } catch (_) {}
     var batchChoice = '不关联';
-    // 同步勾选：扣库存只对同口径库存，计入藏枪只对已在收藏柜的枪。
+    // 同步勾选：扣库存只对同口径库存，计入枪柜只对已在枪柜档案里的枪。
     AmmoItem? deductItem;
     for (final item in stockItems) {
       if (item.caliber == gun.caliber) {
@@ -77,9 +131,10 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
     }
     final deductItemFinal = deductItem;
     var deductStock = false;
-    final inCollection = communityStore.current?.collection
-            .any((c) => c.gunName == gun.name) ??
-        false;
+    // 2.2.5 起发数归枪柜档案：先读枪柜档案，勾选与写回都走它，不再写收藏柜。
+    final cabinetProfiles = await loadGunProfiles();
+    final inCabinet =
+        cabinetProfiles.any((p) => p.gunName == gun.name);
     var addToCollection = false;
     final shotsCtrl = TextEditingController(text: '5');
     final groupCtrl = TextEditingController(text: '');
@@ -97,15 +152,15 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
       builder: (dialogContext) => StatefulBuilder(
         builder: (ctx, setDialogState) => GlassDialog(
           title: gun.name,
-          subtitle: gun.caliber.isNotEmpty ? '口径 ${gun.caliber}' : null,
+          subtitle: gun.caliber.isNotEmpty ? tr('range_caliber_prefix') + gun.caliber : null,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: distanceCtrl,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: '距离（米）',
+                decoration: InputDecoration(
+                  labelText: tr('range_distance_label'),
                   border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                 ),
               ),
@@ -113,8 +168,8 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
               TextField(
                 controller: shotsCtrl,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: '发数',
+                decoration: InputDecoration(
+                  labelText: tr('range_shots_label'),
                   border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                 ),
               ),
@@ -123,8 +178,8 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
                 controller: groupCtrl,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: '分组（厘米，弹着散布）',
+                decoration: InputDecoration(
+                  labelText: tr('range_group_label'),
                   border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                 ),
               ),
@@ -132,20 +187,20 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
               TextField(
                 controller: scoreCtrl,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: '环数 / 得分（可选）',
+                decoration: InputDecoration(
+                  labelText: tr('range_score_label'),
                   border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                 ),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: position,
-                decoration: const InputDecoration(
-                  labelText: '射击姿势',
+                decoration: InputDecoration(
+                  labelText: tr('range_position_label'),
                   border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                 ),
                 items: positions
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .map((e) => DropdownMenuItem(value: e, child: Text(_trPosition(e))))
                     .toList(),
                 onChanged: (v) =>
                     setDialogState(() => position = v ?? position),
@@ -153,12 +208,12 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: target,
-                decoration: const InputDecoration(
-                  labelText: '靶纸类型',
+                decoration: InputDecoration(
+                  labelText: tr('range_target_label'),
                   border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                 ),
                 items: targets
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .map((e) => DropdownMenuItem(value: e, child: Text(_trTarget(e))))
                     .toList(),
                 onChanged: (v) =>
                     setDialogState(() => target = v ?? target),
@@ -167,7 +222,7 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
               if (stockNames.isNotEmpty) ...[
                 Row(
                   children: [
-                    const Text('弹药：'),
+                    Text(tr('range_ammo_label')),
                     const SizedBox(width: 8),
                     Expanded(
                       child: DropdownButton<String>(
@@ -176,8 +231,8 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
                         items: [
                           ...stockNames.map((n) =>
                               DropdownMenuItem(value: n, child: Text(n))),
-                          const DropdownMenuItem(
-                              value: '手动填', child: Text('手动填')),
+                          DropdownMenuItem(
+                              value: '手动填', child: Text(tr('range_manual'))),
                         ],
                         onChanged: (v) => setDialogState(
                             () => ammoChoice = v ?? ammoChoice),
@@ -189,8 +244,8 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
                   const SizedBox(height: 12),
                   TextField(
                     controller: ammoCtrl,
-                    decoration: const InputDecoration(
-                      labelText: '弹药（品牌 / 型号，可选）',
+                    decoration: InputDecoration(
+                      labelText: tr('range_ammo_hint'),
                       border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                     ),
                   ),
@@ -198,8 +253,8 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
               ] else
                 TextField(
                   controller: ammoCtrl,
-                  decoration: const InputDecoration(
-                    labelText: '弹药（品牌 / 型号，可选）',
+                  decoration: InputDecoration(
+                    labelText: tr('range_ammo_hint'),
                     border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                   ),
                 ),
@@ -208,7 +263,7 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
                 spacing: 6,
                 children: ['晴', '阴', '雨', '雪', '室内']
                     .map((w) => ActionChip(
-                          label: Text(w),
+                          label: Text(_trWeather(w)),
                           onPressed: () =>
                               setDialogState(() => weatherCtrl.text = w),
                         ))
@@ -220,8 +275,8 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
                   Expanded(
                     child: TextField(
                       controller: weatherCtrl,
-                      decoration: const InputDecoration(
-                        labelText: '天气（可选）',
+                      decoration: InputDecoration(
+                        labelText: tr('range_weather_label'),
                         border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                       ),
                     ),
@@ -230,8 +285,8 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
                   Expanded(
                     child: TextField(
                       controller: windCtrl,
-                      decoration: const InputDecoration(
-                        labelText: '风速风向（可选）',
+                      decoration: InputDecoration(
+                        labelText: tr('range_wind_label'),
                         border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                       ),
                     ),
@@ -240,20 +295,20 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
               ),
               if (releasedBatches.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                const Text('关联复装批次（可选）',
+                Text(tr('range_batch_label'),
                     style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 DropdownButton<String>(
                   value: batchChoice,
                   isExpanded: true,
                   items: [
-                    const DropdownMenuItem(
-                        value: '不关联', child: Text('不关联')),
+                    DropdownMenuItem(
+                        value: '不关联', child: Text(tr('range_none'))),
                     for (final b in releasedBatches)
                       DropdownMenuItem(
                         value: b.batchNo,
                         child: Text(
-                            '${b.batchNo}（${b.caliber} ${b.bullet}）',
+                            '${b.batchNo}${tr('range_paren_open')}${b.caliber} ${b.bullet}${tr('range_paren_close')}',
                             overflow: TextOverflow.ellipsis),
                       ),
                   ],
@@ -261,26 +316,26 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
                       setDialogState(() => batchChoice = v ?? '不关联'),
                 ),
               ],
-              if (deductItemFinal != null || inCollection) ...[
+              if (deductItemFinal != null || inCabinet) ...[
                 const SizedBox(height: 12),
-                const Text('同步（可选，不勾不做）',
+                Text(tr('range_sync_label'),
                     style: TextStyle(fontWeight: FontWeight.bold)),
                 if (deductItemFinal != null)
                   CheckboxListTile(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                     controlAffinity: ListTileControlAffinity.leading,
-                    title: Text('从弹药库存扣发数（${deductItemFinal.name}）'),
+                    title: Text(tr('range_deduct_prefix') + deductItemFinal.name + tr('range_deduct_suffix')),
                     value: deductStock,
                     onChanged: (v) =>
                         setDialogState(() => deductStock = v ?? false),
                   ),
-                if (inCollection)
+                if (inCabinet)
                   CheckboxListTile(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                     controlAffinity: ListTileControlAffinity.leading,
-                    title: const Text('计入藏枪已打发数'),
+                    title: Text(tr('range_count_rounds')),
                     value: addToCollection,
                     onChanged: (v) => setDialogState(
                         () => addToCollection = v ?? false),
@@ -289,8 +344,8 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
               const SizedBox(height: 12),
               TextField(
                 controller: noteCtrl,
-                decoration: const InputDecoration(
-                  labelText: '备注（可选）',
+                decoration: InputDecoration(
+                  labelText: tr('range_note_label'),
                   border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                 ),
               ),
@@ -323,7 +378,7 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
         wind: windCtrl.text.trim(),
         batchNo: batchChoice == '不关联' ? '' : batchChoice,
       ));
-      showAppToast(context, '成绩已记录 +5 经验');
+      showAppToast(context, tr('range_saved'));
       if (deductStock && deductItemFinal != null && shots > 0) {
         final used = shots > deductItemFinal.quantity
             ? deductItemFinal.quantity
@@ -339,8 +394,15 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
               reason: '打靶'));
         }
       }
+      // 计入枪柜发数：只改已在枪柜档案里的枪，并同步内存镜像。
       if (addToCollection && shots > 0) {
-        communityStore.addCollectionRounds(gun.name, shots);
+        final idx =
+            cabinetProfiles.indexWhere((p) => p.gunName == gun.name);
+        if (idx >= 0) {
+          cabinetProfiles[idx].rounds += shots;
+          await saveGunProfiles(cabinetProfiles);
+          cabinetProfilesCache = cabinetProfiles;
+        }
       }
     }
     distanceCtrl.dispose();
@@ -362,7 +424,7 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
       builder: (_, __) {
         final me = communityStore.current;
         return Scaffold(
-          appBar: SubPageAppBar(title: '靶场成绩'),
+          appBar: SubPageAppBar(title: tr('range_title')),
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -373,7 +435,7 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
                     OutlinedButton.icon(
                       onPressed: () => _addScore(context),
                       icon: const Icon(Icons.add, size: 18),
-                      label: const Text('记一条'),
+                      label: Text(tr('range_add_one')),
                     ),
                 ],
               ),
@@ -414,10 +476,10 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
                       children: [
                         Icon(Icons.gps_fixed, size: 48, color: grey),
                         const SizedBox(height: 12),
-                        Text('还没有靶场成绩',
+                        Text(tr('range_empty'),
                             style: TextStyle(color: grey)),
                         const SizedBox(height: 4),
-                        Text('记下距离、姿势、环数与分组，成绩直接喂靶场勋章',
+                        Text(tr('range_empty_hint'),
                             style: TextStyle(color: grey, fontSize: 12)),
                       ],
                     ),
@@ -452,18 +514,18 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('${scores.length} 次 · 共 $totalShots 发',
+                                Text('${scores.length}' + tr('range_summary_times') + ' · ' + tr('range_summary_total') + '$totalShots' + tr('range_summary_shots'),
                                     style: const TextStyle(
                                         fontWeight: FontWeight.bold)),
                                 if (best != null)
                                   Text(
                                       best.distance > 0
-                                          ? '最好分组：${_fmt(best.groupSize)} 厘米（${_fmt(best.groupSize / (best.distance * 0.02909))} MOA，${best.distance} 米，${best.gunName}）'
-                                          : '最好分组：${_fmt(best.groupSize)} 厘米（${best.gunName}）',
+                                          ? tr('range_best_prefix') + '${_fmt(best.groupSize)} ${tr('trip_cm')}${tr('range_paren_open')}${_fmt(best.groupSize / (best.distance * 0.02909))} MOA${tr('range_best_sep')}${best.distance} ${tr('trip_meter')}${tr('range_best_sep')}${best.gunName}${tr('range_paren_close')}'
+                                          : tr('range_best_prefix') + '${_fmt(best.groupSize)} ${tr('trip_cm')}${tr('range_paren_open')}${best.gunName}${tr('range_paren_close')}',
                                       style: const TextStyle(
                                           color: Colors.grey, fontSize: 12)),
                                 Text(
-                                    '最近一次：${CommunityStore.formatTime(scores.first.date)}',
+                                    tr('range_last_prefix') + CommunityStore.formatTime(scores.first.date),
                                     style: const TextStyle(
                                         color: Colors.grey, fontSize: 12)),
                               ],
@@ -475,7 +537,7 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
                           spacing: 6,
                           children: ['全部', ...gunNames]
                               .map((g) => ChoiceChip(
-                                    label: Text(g),
+                                    label: Text(g == '全部' ? tr('range_filter_all') : g),
                                     selected: _filter == g,
                                     onSelected: (_) =>
                                         setState(() => _filter = g),
@@ -484,7 +546,7 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
                         ),
                         const SizedBox(height: 12),
                         if (shown.isEmpty)
-                          const Text('该枪暂无成绩',
+                          Text(tr('range_no_scores_for_gun'),
                               style: TextStyle(color: Colors.grey))
                         else
                           ...shown.map((r) {
@@ -492,8 +554,8 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
                                 ? r.groupSize / (r.distance * 0.02909)
                                 : 0.0;
                             final details = [
-                              if (r.position.isNotEmpty) r.position,
-                              if (r.target.isNotEmpty) r.target,
+                              if (r.position.isNotEmpty) _trPosition(r.position),
+                              if (r.target.isNotEmpty) _trTarget(r.target),
                               if (r.ammo.isNotEmpty) r.ammo,
                               if (r.weather.isNotEmpty) r.weather,
                               if (r.wind.isNotEmpty) r.wind,
@@ -526,18 +588,18 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
                                     const SizedBox(height: 4),
                                     if (r.groupSize > 0)
                                       Text(
-                                          '分组 ${_fmt(r.groupSize)} 厘米${moa > 0 ? '（${_fmt(moa)} MOA）' : ''}',
+                                          tr('trip_group_label') + ' ${_fmt(r.groupSize)} ${tr('trip_cm')}${moa > 0 ? '${tr('range_paren_open')}${_fmt(moa)} MOA${tr('range_paren_close')}' : ''}',
                                           style: const TextStyle(
                                               fontWeight: FontWeight.bold,
                                               color: Color(0xFFE86A1C),
                                               fontSize: 15))
                                     else
-                                      const Text('未记分组',
+                                      Text(tr('range_no_group'),
                                           style: TextStyle(
                                               color: Colors.grey)),
                                     const SizedBox(height: 4),
                                     Text(
-                                        '${r.distance} 米 · ${r.shots} 发${r.score.isNotEmpty ? ' · ${r.score} 环' : ''}'),
+                                        '${r.distance} ${tr('trip_meter')} · ${r.shots} ${tr('trip_shots_unit')}${r.score.isNotEmpty ? ' · ${r.score} ${tr('range_ring_suffix')}' : ''}'),
                                     if (details.isNotEmpty) ...[
                                       const SizedBox(height: 4),
                                       Text(details,
@@ -552,7 +614,7 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
                                         IconButton(
                                           icon: const Icon(Icons.repeat,
                                               size: 20),
-                                          tooltip: '再记一组（同枪同距离）',
+                                          tooltip: tr('range_retake_tooltip'),
                                           onPressed: () {
                                             Gun? found;
                                             for (final g in guns) {
@@ -573,7 +635,7 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
                                           icon: const Icon(
                                               Icons.calculate_outlined,
                                               size: 20),
-                                          tooltip: '用这次成绩算散布',
+                                          tooltip: tr('range_calc_tooltip'),
                                           onPressed: () => Navigator.push(
                                             context,
                                             MaterialPageRoute(
@@ -583,7 +645,7 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
                                                     r.distance.toDouble(),
                                                 initialGroupCm: r.groupSize,
                                                 initialLabel:
-                                                    '靶场成绩 ${r.gunName} · ${r.distance} 米',
+                                                    tr('range_title') + ' ${r.gunName} · ${r.distance} ${tr('trip_meter')}',
                                               ),
                                             ),
                                           ),

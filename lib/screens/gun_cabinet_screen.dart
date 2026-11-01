@@ -11,11 +11,13 @@ import '../i18n.dart';
 import '../models.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/app_top_bar.dart';
+import 'gun_picker_dialog.dart';
 
 /// 我的枪柜：首页“我的枪柜”点进来的一页。
-/// 拥有状态复用收藏柜 status == 'owned'，不另起体系，不动勋章逻辑。
+/// 2.2.5 起拥有列表只读自有档案 gun_profiles_v1，不再读收藏柜；
+/// 添加走现有选枪器，移除删档案及其全部装机记录；旧收藏数据不动。
 /// 个人档案字段全部可空，没有就不显示，绝不编数据；
-/// 射弹数读收藏柜 rounds；配件装机存 accessoryId + gunName + 装机日期。
+/// 配件装机存 accessoryId + gunName + 装机日期。
 /// 经 gunsmap/prefs 存本机（key gun_profiles_v1、gun_mounts_v1）。
 String _dateText(int ms) {
   final d = DateTime.fromMillisecondsSinceEpoch(ms);
@@ -51,11 +53,16 @@ class _GunCabinetScreenState extends State<GunCabinetScreen> {
     _load();
   }
 
-  List<CollectionItem> get _ownedGuns =>
-      communityStore.current?.collection
-          .where((c) => c.kind == 'gun' && c.status == 'owned')
-          .toList() ??
-      [];
+  /// 枪柜拥有列表：只读自有档案 gun_profiles_v1（2.2.5 起不再读收藏柜）。
+  List<GunProfile> get _ownedGuns => _profiles;
+
+  /// 档案里没有口径字段，显示时按枪名回查图鉴；查不到只显示枪名。
+  String _caliberOf(String gunName) {
+    for (final g in guns) {
+      if (g.name == gunName) return g.caliber;
+    }
+    return '';
+  }
 
   GunProfile? _profile(String gunName) {
     for (final p in _profiles) {
@@ -81,6 +88,7 @@ class _GunCabinetScreenState extends State<GunCabinetScreen> {
             ..clear()
             ..addAll(list);
         });
+        cabinetProfilesCache = List.of(_profiles);
       }
     } catch (e) {
       appLog('prefs', '枪柜档案读取失败：$e');
@@ -105,6 +113,7 @@ class _GunCabinetScreenState extends State<GunCabinetScreen> {
   }
 
   void _saveProfiles() {
+    cabinetProfilesCache = List.of(_profiles);
     try {
       _prefsChannel.invokeMethod('setString', {
         'key': _profilesKey,
@@ -264,8 +273,51 @@ class _GunCabinetScreenState extends State<GunCabinetScreen> {
     showAppToast(context, tr('chrono_saved'));
   }
 
-  Future<void> _editProfile(CollectionItem gun) async {
-    final existing = _profile(gun.gunName);
+  /// 添加拥有枪支：走现有选枪器，已在柜中的给提示不重复加。
+  Future<void> _addOwnedGun() async {
+    final gun = await showGunPickerDialog(context);
+    if (gun == null || !mounted) return;
+    if (_profiles.any((p) => p.gunName == gun.name)) {
+      showAppToast(context, tr('cab_already_owned'));
+      return;
+    }
+    setState(() => _profiles.add(GunProfile(gunName: gun.name)));
+    _saveProfiles();
+    showAppToast(context, tr('chrono_saved'));
+  }
+
+  /// 移除拥有枪支：二次确认后删档案及其全部装机记录。
+  Future<void> _removeOwnedGun(GunProfile profile) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(profile.gunName),
+        content: Text(tr('cab_remove_confirm')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(tr('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(tr('cab_remove')),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    setState(() {
+      _profiles.removeWhere((p) => p.gunName == profile.gunName);
+      _mounts.removeWhere((m) => m.gunName == profile.gunName);
+      if (_mountGun == profile.gunName) _mountGun = null;
+    });
+    _saveProfiles();
+    _saveMounts();
+    showAppToast(context, tr('chrono_saved'));
+  }
+
+  Future<void> _editProfile(String gunName) async {
+    final existing = _profile(gunName);
     final purchaseCtrl =
         TextEditingController(text: existing?.purchaseDate ?? '');
     final priceCtrl = TextEditingController(text: existing?.price ?? '');
@@ -276,7 +328,7 @@ class _GunCabinetScreenState extends State<GunCabinetScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('${gun.gunName} · ${tr('cab_edit')}'),
+        title: Text('$gunName · ${tr('cab_edit')}'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -285,7 +337,7 @@ class _GunCabinetScreenState extends State<GunCabinetScreen> {
                   controller: purchaseCtrl,
                   decoration: InputDecoration(
                       labelText: tr('cab_purchase'),
-                      hintText: '如 2024-05-01')),
+                      hintText: tr('cabinet_date_hint'))),
               TextField(
                   controller: priceCtrl,
                   decoration:
@@ -329,14 +381,16 @@ class _GunCabinetScreenState extends State<GunCabinetScreen> {
     faultCtrl.dispose();
     if (ok != true || !mounted) return;
     setState(() {
-      _profiles.removeWhere((p) => p.gunName == gun.gunName);
+      _profiles.removeWhere((p) => p.gunName == gunName);
       _profiles.add(GunProfile(
-        gunName: gun.gunName,
+        gunName: gunName,
         purchaseDate: purchase,
         price: price,
         zeroStatus: zero,
         maintenanceNote: maint,
         faultNote: fault,
+        // 编辑档案不丢发数：2.2.0 起档案编辑曾把 rounds 重置为 0，此处保住原值。
+        rounds: existing?.rounds ?? 0,
       ));
     });
     _saveProfiles();
@@ -360,9 +414,19 @@ class _GunCabinetScreenState extends State<GunCabinetScreen> {
             body: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Text(tr('cab_guns'),
-                    style: const TextStyle(
-                        fontSize: 17, fontWeight: FontWeight.bold)),
+                Row(
+                  children: [
+                    Text(tr('cab_guns'),
+                        style: const TextStyle(
+                            fontSize: 17, fontWeight: FontWeight.bold)),
+                    const Spacer(),
+                    OutlinedButton.icon(
+                      onPressed: _addOwnedGun,
+                      icon: const Icon(Icons.add, size: 18),
+                      label: Text(tr('cab_add_owned')),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 8),
                 if (owned.isEmpty)
                   Text(tr('cab_empty'),
@@ -402,13 +466,21 @@ class _GunCabinetScreenState extends State<GunCabinetScreen> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                      '${g.gunName} · ${g.caliber}',
+                                      _caliberOf(g.gunName).isEmpty
+                                          ? g.gunName
+                                          : '${g.gunName} · ${_caliberOf(g.gunName)}',
                                       style: const TextStyle(
                                           fontWeight: FontWeight.bold)),
                                 ),
                                 TextButton(
-                                  onPressed: () => _editProfile(g),
+                                  onPressed: () => _editProfile(g.gunName),
                                   child: Text(tr('cab_edit')),
+                                ),
+                                TextButton(
+                                  onPressed: () => _removeOwnedGun(g),
+                                  child: Text(tr('cab_remove'),
+                                      style: const TextStyle(
+                                          color: Colors.red)),
                                 ),
                               ],
                             ),

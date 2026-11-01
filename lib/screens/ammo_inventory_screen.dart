@@ -70,10 +70,10 @@ class AmmoItem {
       final boxes = quantity ~/ roundsPerBox;
       final loose = quantity % roundsPerBox;
       return loose == 0
-          ? '现存 $quantity 发（$boxes 盒）'
-          : '现存 $quantity 发（$boxes 盒 + $loose 发）';
+          ? tr('ammo_stock_prefix') + '$quantity' + tr('ammo_stock_rounds') + tr('ammo_stock_boxes_prefix') + '$boxes' + tr('ammo_stock_boxes_unit') + tr('ammo_stock_close')
+          : tr('ammo_stock_prefix') + '$quantity' + tr('ammo_stock_rounds') + tr('ammo_stock_boxes_prefix') + '$boxes' + tr('ammo_stock_boxes_unit') + ' + $loose' + tr('ammo_stock_rounds') + tr('ammo_stock_close');
     }
-    return '现存 $quantity 发';
+    return tr('ammo_stock_prefix') + '$quantity' + tr('ammo_stock_rounds');
   }
 }
 
@@ -273,6 +273,23 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
     _log(item, actual, reason);
   }
 
+  String _reasonLabel(String reason) {
+    switch (reason) {
+      case '买入':
+        return tr('ammo_reason_buy');
+      case '消耗':
+        return tr('ammo_reason_use');
+      case '打靶':
+        return tr('ammo_reason_shoot');
+      case '盘点':
+        return tr('ammo_reason_count');
+      case '复装入库':
+        return tr('ammo_reason_reload_in');
+      default:
+        return reason;
+    }
+  }
+
   void _log(AmmoItem item, int delta, String reason) {
     final m = AmmoMovement(
         date: _today(),
@@ -294,21 +311,21 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
     final n = await showDialog<int>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(isShoot ? '打靶消耗' : '盘点'),
+        title: Text(isShoot ? tr('ammo_shoot_use') : tr('ammo_count_check')),
         content: TextField(
           controller: ctrl,
           keyboardType: TextInputType.number,
           decoration: InputDecoration(
-              labelText: isShoot ? '这次打了多少发' : '实际现存多少发'),
+              labelText: isShoot ? tr('ammo_shoot_label') : tr('ammo_count_label')),
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('取消')),
+              child: Text(tr('cancel'))),
           TextButton(
               onPressed: () =>
                   Navigator.pop(ctx, int.tryParse(ctrl.text.trim())),
-              child: const Text('确定')),
+              child: Text(tr('confirm'))),
         ],
       ),
     );
@@ -343,13 +360,13 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
     } catch (_) {}
     if (!mounted) return;
     if (logs.isEmpty) {
-      showAppToast(context, '没有已放行复装记录');
+      showAppToast(context, tr('ammo_no_released'));
       return;
     }
     final picked = await showDialog<ReloadLogEntry>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('从复装记录入库'),
+        title: Text(tr('ammo_import_from_reload')),
         content: SizedBox(
           width: double.maxFinite,
           child: ListView.builder(
@@ -360,7 +377,7 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
               return ListTile(
                 title: Text(
                     '${l.batchNo.isNotEmpty ? l.batchNo : l.date} · ${l.caliber}'),
-                subtitle: Text('${l.bullet} · ${l.rounds} 发'),
+                subtitle: Text('${l.bullet} · ${l.rounds}' + tr('ammo_rounds_suffix')),
                 onTap: () => Navigator.pop(ctx, l),
               );
             },
@@ -369,7 +386,7 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('取消')),
+              child: Text(tr('cancel'))),
         ],
       ),
     );
@@ -388,7 +405,7 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
       _boxCtrl.text = '0';
       _batchCtrl.text = picked.batchNo;
     });
-    showAppToast(context, '已填入新增表单，请确认后点加入库存');
+    showAppToast(context, tr('ammo_filled_form'));
   }
 
   @override
@@ -401,14 +418,14 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
     }
     final calibers = caliberInfos.map((c) => c.caliber).toList();
     return Scaffold(
-      appBar: const SubPageAppBar(title: '弹药库存'),
+      appBar: SubPageAppBar(title: tr('ammo_title')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('只记你手头的现存发数，不提供价格、不做交易；数据只存本机。',
+          Text(tr('ammo_note'),
               style: TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 12),
-          Text('现存合计：$total 发（${_items.length} 种）',
+          Text(tr('ammo_total_prefix') + '$total' + tr('ammo_total_mid') + '${_items.length}' + tr('ammo_total_suffix'),
               style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Color(0xFFE86A1C),
@@ -416,7 +433,7 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
           if (lowCount > 0)
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text('低于提醒线：$lowCount 种，标红的该补货了。',
+              child: Text(tr('ammo_low_prefix') + '$lowCount' + tr('ammo_low_suffix'),
                   style: const TextStyle(color: Colors.red, fontSize: 13)),
             ),
           if (_items.isNotEmpty) ...[
@@ -450,15 +467,15 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
           OutlinedButton.icon(
             onPressed: _importFromReloadLog,
             icon: const Icon(Icons.science_outlined, size: 18),
-            label: const Text('从复装记录入库'),
+            label: Text(tr('ammo_import_from_reload')),
           ),
           const SizedBox(height: 16),
-          const Text('新增弹药',
+          Text(tr('ammo_add_title'),
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Row(
             children: [
-              const Text('口径：'),
+              Text(tr('ammo_caliber_label')),
               const SizedBox(width: 8),
               Expanded(
                 child: DropdownButton<String>(
@@ -467,8 +484,8 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
                   items: [
                     for (final c in calibers)
                       DropdownMenuItem(value: c, child: Text(c)),
-                    const DropdownMenuItem(
-                        value: _manualCaliber, child: Text('其他（手动填）')),
+                    DropdownMenuItem(
+                        value: _manualCaliber, child: Text(tr('ammo_other_manual'))),
                   ],
                   onChanged: (v) {
                     if (v != null) setState(() => _caliber = v);
@@ -483,13 +500,13 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
                 controller: _caliberManualCtrl,
                 onChanged: (_) => setState(() {}),
                 decoration:
-                    const InputDecoration(labelText: '口径，如 9×19mm')),
+                    InputDecoration(labelText: tr('ammo_caliber_hint'))),
           ],
           const SizedBox(height: 8),
           TextField(
               controller: _nameCtrl,
-              decoration: const InputDecoration(
-                  labelText: '弹药名称，如 124gr 全金属被甲')),
+              decoration: InputDecoration(
+                  labelText: tr('ammo_name_hint'))),
           if (_bulletChips(_resolvedCaliber).isNotEmpty) ...[
             const SizedBox(height: 6),
             Wrap(
@@ -508,7 +525,7 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
             spacing: 6,
             children: ['厂弹', '复装']
                 .map((k) => ChoiceChip(
-                      label: Text(k),
+                      label: Text(k == '复装' ? tr('ammo_kind_reload') : tr('ammo_kind_factory')),
                       selected: _kind == k,
                       onSelected: (_) => setState(() => _kind = k),
                     ))
@@ -518,46 +535,46 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
             const SizedBox(height: 8),
             TextField(
                 controller: _batchCtrl,
-                decoration: const InputDecoration(
-                    labelText: '复装批次号（可选，与复装记录对应）')),
+                decoration: InputDecoration(
+                    labelText: tr('ammo_batch_label'))),
           ],
           const SizedBox(height: 8),
           TextField(
               controller: _qtyCtrl,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: '现存发数')),
+              decoration: InputDecoration(labelText: tr('ammo_qty_label'))),
           const SizedBox(height: 8),
           TextField(
               controller: _boxCtrl,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                  labelText: '每盒发数（50 或 20，散装填 0）')),
+              decoration: InputDecoration(
+                  labelText: tr('ammo_per_box_label'))),
           const SizedBox(height: 8),
           TextField(
               controller: _lowCtrl,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                  labelText: '低库存提醒线（发，低于此数标红，可空）')),
+              decoration: InputDecoration(
+                  labelText: tr('ammo_low_label'))),
           const SizedBox(height: 8),
           TextField(
               controller: _locationCtrl,
               decoration:
-                  const InputDecoration(labelText: '存放位置（可选，如 枪柜二层）')),
+                  InputDecoration(labelText: tr('ammo_location_label'))),
           const SizedBox(height: 8),
           TextField(
               controller: _noteCtrl,
-              decoration: const InputDecoration(labelText: '备注（可选）')),
+              decoration: InputDecoration(labelText: tr('ammo_note_label'))),
           const SizedBox(height: 12),
           FilledButton(
             style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFFE86A1C)),
             onPressed: _add,
-            child: const Text('加入库存',
+            child: Text(tr('ammo_add_btn'),
                 style: TextStyle(color: Colors.white)),
           ),
           const SizedBox(height: 20),
           if (_items.isEmpty)
-            const Text('还没有库存记录，在上面填口径和弹药名称即可加入。',
+            Text(tr('ammo_empty'),
                 style: TextStyle(color: Colors.grey))
           else
             ...groups.entries.map((entry) {
@@ -567,9 +584,9 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
               return Card(
                 child: ExpansionTile(
                   title: Text(
-                      '${entry.key} · 共 $groupTotal 发（${entry.value.length} 种）'),
+                      '${entry.key} · ' + tr('ammo_group_prefix') + '$groupTotal' + tr('ammo_group_mid') + '${entry.value.length}' + tr('ammo_group_suffix')),
                   subtitle: groupLow
-                      ? const Text('有弹药低于提醒线',
+                      ? Text(tr('ammo_group_low'),
                           style: TextStyle(color: Colors.red, fontSize: 12))
                       : null,
                   children: entry.value.map((item) {
@@ -596,7 +613,7 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
                             ],
                           ),
                           if (item.location.isNotEmpty)
-                            Text('存放：${item.location}',
+                            Text(tr('ammo_location_prefix') + item.location,
                                 style: const TextStyle(
                                     color: Colors.grey, fontSize: 12)),
                           if (item.note.isNotEmpty)
@@ -609,7 +626,7 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFFE86A1C))),
                           if (item.isLow)
-                            Text('低于提醒线（< ${item.lowAt} 发）',
+                            Text(tr('ammo_below_line_prefix') + '${item.lowAt}' + tr('ammo_below_line_suffix'),
                                 style: const TextStyle(
                                     color: Colors.red, fontSize: 12)),
                           const SizedBox(height: 8),
@@ -621,12 +638,12 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
                                 OutlinedButton(
                                     onPressed: () => _bump(item,
                                         item.roundsPerBox, '买入'),
-                                    child: const Text('+1盒')),
+                                    child: Text(tr('ammo_add_box'))),
                               if (item.roundsPerBox > 0)
                                 OutlinedButton(
                                     onPressed: () => _bump(item,
                                         -item.roundsPerBox, '消耗'),
-                                    child: const Text('-1盒')),
+                                    child: Text(tr('ammo_remove_box'))),
                               OutlinedButton(
                                   onPressed: () => _bump(item, 10, '买入'),
                                   child: const Text('+10')),
@@ -635,10 +652,10 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
                                   child: const Text('-10')),
                               OutlinedButton(
                                   onPressed: () => _adjustDialog(item, true),
-                                  child: const Text('打靶消耗')),
+                                  child: Text(tr('ammo_shoot_use'))),
                               OutlinedButton(
                                   onPressed: () => _adjustDialog(item, false),
-                                  child: const Text('盘点')),
+                                  child: Text(tr('ammo_count_check'))),
                             ],
                           ),
                           const Divider(height: 20),
@@ -653,13 +670,13 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
             const SizedBox(height: 8),
             Card(
               child: ExpansionTile(
-                title: Text('变动记录（最近 ${_movements.length > 30 ? 30 : _movements.length} 条）'),
+                title: Text(tr('ammo_movements_prefix') + '${_movements.length > 30 ? 30 : _movements.length}' + tr('ammo_movements_suffix')),
                 children: _movements.take(30).map((m) {
                   final sign = m.delta >= 0 ? '+' : '';
                   return ListTile(
                     dense: true,
                     title: Text('${m.name} · ${m.caliber}'),
-                    subtitle: Text('${m.date} · ${m.reason}'),
+                    subtitle: Text('${m.date} · ${_reasonLabel(m.reason)}'),
                     trailing: Text('$sign${m.delta}',
                         style: TextStyle(
                             color: m.delta >= 0

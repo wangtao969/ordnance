@@ -18,8 +18,8 @@ class LiquidGlassBackdrop extends StatefulWidget {
     this.radius = 34,
     this.refraction = 14.0,
     this.chroma = 0.35,
-    this.tint = 0.08,
-    this.fallbackSigma = 28.0,
+    this.tint = 0.16,
+    this.fallbackSigma = 40.0,
   });
 
   final Widget child;
@@ -33,10 +33,10 @@ class LiquidGlassBackdrop extends StatefulWidget {
   /// 红蓝错位色散系数（与演示页一致）。
   final double chroma;
 
-  /// 白色 veil 量（与演示页一致）。
+  /// 白色 veil 量：2.2.5 从 0.08 加到 0.16，导航条更实、更糊。
   final double tint;
 
-  /// 着色器不可用时的毛玻璃 blur（与原来底部导航的 28 一致）。
+  /// 着色器不可用时的毛玻璃 blur：2.2.5 从 28 加到 40。
   final double fallbackSigma;
 
   @override

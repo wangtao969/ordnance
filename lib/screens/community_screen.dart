@@ -10,18 +10,17 @@ import '../widgets/level_badge.dart';
 import 'community_account_dialogs.dart';
 import 'community_board_screen.dart';
 import 'community_compose_screen.dart';
-import 'community_leaderboard_screen.dart';
-import 'community_onboarding_screen.dart';
+import 'community_dm_screen.dart';
 import 'community_post_detail_screen.dart';
 import 'community_profile_screen.dart';
-import 'community_tasks_screen.dart';
 
-/// 社区页（1.9.0 重构）：
-/// 顶部两个入口：动态 / 社区，切换带淡入滑动动画。
-/// - 动态：关注的人 + 全站用户的微博式图文分享（最新 / 推荐 / 关注三档）。
-/// - 社区：板块入口、平台活动预留、排行榜、任务区、热聊板块、其它板块。
-/// 个人资料块已拿掉（入口在“我的”Tab，通知 / 私信也随之挪过去）；
-/// 收藏柜只在“我的”页，不再出现在这里。
+/// 社区页（2.2.5 融合重构）：
+/// 动态流是唯一主场；私信挂在右上角（信封 + 未读角标）；
+/// 经验榜是动态流顶部一条可折叠横条（默认前三，点开展开完整榜），
+/// 不再单独设排行榜 Tab；作者主页挂动态、成就墙、经验名次与私信。
+/// 已删：社区 home 视图（平台活动、签到、任务区、板块 grid）、
+/// 通知中心、任务屏、排行榜屏、入驻引导、管理后台。
+/// 看板页与靶场成绩页保留（动态浏览维度与工具数据页）。
 /// 数据保存在本机（见 community_store.dart），调试提示只在 debug 构建显示。
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -31,10 +30,9 @@ class CommunityScreen extends StatefulWidget {
 }
 
 class _CommunityScreenState extends State<CommunityScreen> {
-  String _view = 'feed'; // feed 动态 / home 社区
   String _feedTab = 'latest'; // latest 最新 / hot 推荐 / following 关注
   bool _showSearch = false;
-  bool _onboardingShown = false;
+  bool _rankExpanded = false;
   late final TextEditingController _searchCtrl;
 
   @override
@@ -49,32 +47,19 @@ class _CommunityScreenState extends State<CommunityScreen> {
     super.dispose();
   }
 
-  void _maybeOnboarding(CommunityAccount? current) {
-    if (current == null || current.onboarded || _onboardingShown) return;
-    _onboardingShown = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const CommunityOnboardingScreen()),
-      );
-    });
-  }
-
   Future<void> _openComposer() async {
     if (communityStore.current == null) {
       askLoginDialog(context);
       return;
     }
-    final autoChecked = await Navigator.push<bool>(
+    final published = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (_) => const CommunityComposeScreen()),
     );
-    if (autoChecked == true && mounted) {
-      showAppToast(context, '发布成功，已自动签到');
+    if (published == true && mounted) {
+      showAppToast(context, tr('feed_post_success'));
     }
   }
-
 
   void _search(String q) {
     Navigator.push(
@@ -83,22 +68,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
           builder: (_) =>
               CommunityBoardScreen(board: '全部', initialQuery: q.trim())),
     );
-  }
-
-  void _checkIn() {
-    final me = communityStore.current;
-    if (me == null) {
-      askLoginDialog(context);
-      return;
-    }
-    final granted = communityStore.checkIn();
-    if (granted < 0) {
-      showAppToast(context, '今天已经签到过了，连签 ${me.checkInStreak} 天');
-      return;
-    }
-    showAppToast(context, granted > 0
-              ? '签到成功 +$granted 经验，连签 ${me.checkInStreak} 天'
-              : '签到成功，连签 ${me.checkInStreak} 天');
   }
 
   List<CommunityPost> _feedPosts(CommunityAccount? me) {
@@ -129,9 +98,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
     }
   }
 
-  int _boardCount(String board) =>
-      communityStore.posts.where((p) => p.board == board).length;
-
   void _openBoard(String board) {
     Navigator.push(
       context,
@@ -139,19 +105,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
-  void _showEventSoon() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('平台活动'),
-        content: const Text('平台活动随线上版上线，敬请期待。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('知道了'),
-          ),
-        ],
-      ),
+  void _openProfile(CommunityAccount account) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+          builder: (_) => CommunityProfileScreen(account: account)),
     );
   }
 
@@ -183,8 +141,125 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
+  Widget _rankNumber(int rank) {
+    final color = rank == 1
+        ? const Color(0xFFD4AF37)
+        : rank == 2
+            ? const Color(0xFF9AA0A6)
+            : rank == 3
+                ? const Color(0xFFCD7F32)
+                : Colors.grey;
+    return Container(
+      width: 22,
+      height: 22,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+      child: Text('$rank',
+          style: const TextStyle(
+              color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  /// 经验榜横条：默认只显示前三，点标题行展开完整榜；
+  /// 登录后标题行右侧显示本人的名次。
+  Widget _rankStrip(CommunityAccount? current, Color grey) {
+    final accounts = communityStore.accounts.toList();
+    accounts.sort((a, b) => b.totalXp.compareTo(a.totalXp));
+    int? myRank;
+    if (current != null) {
+      final i = accounts.indexWhere((a) => a.id == current.id);
+      if (i >= 0) myRank = i + 1;
+    }
+    final shown = _rankExpanded ? accounts : accounts.take(3).toList();
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InkWell(
+              onTap: () => setState(() => _rankExpanded = !_rankExpanded),
+              borderRadius: BorderRadius.circular(8),
+              child: Row(
+                children: [
+                  const Icon(Icons.emoji_events_outlined, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(tr('rank_strip_title'),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 15)),
+                  ),
+                  if (current != null && myRank != null)
+                    Text(
+                        tr('rank_my_prefix') +
+                            '$myRank' +
+                            tr('rank_my_suffix'),
+                        style: TextStyle(color: grey, fontSize: 12)),
+                  const SizedBox(width: 4),
+                  Text(
+                      _rankExpanded
+                          ? tr('rank_collapse')
+                          : tr('rank_expand'),
+                      style: TextStyle(color: grey, fontSize: 12)),
+                  Icon(
+                      _rankExpanded
+                          ? Icons.expand_less
+                          : Icons.expand_more,
+                      size: 18,
+                      color: grey),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (accounts.isEmpty)
+              Text(tr('rank_no_users'),
+                  style: TextStyle(color: grey, fontSize: 13))
+            else
+              for (var i = 0; i < shown.length; i++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: InkWell(
+                    onTap: () => _openProfile(shown[i]),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Row(
+                      children: [
+                        _rankNumber(i + 1),
+                        const SizedBox(width: 10),
+                        communityAvatar(
+                          bytes: shown[i].avatarBytes,
+                          color: shown[i].avatarColor,
+                          nickname: shown[i].nickname,
+                          radius: 14,
+                          frame: shown[i].avatarFrame,
+                          verified: isSpecialAccount(shown[i]),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(shown[i].nickname,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontWeight:
+                                      current != null && shown[i].id == current.id
+                                          ? FontWeight.bold
+                                          : FontWeight.normal)),
+                        ),
+                        Text(
+                            tr('rank_xp_prefix') + '${shown[i].totalXp}',
+                            style: TextStyle(color: grey, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _postCard(CommunityPost p, Color grey) {
     final authorAccount = communityStore.findAccount(p.authorId);
+    final metaStyle = TextStyle(color: grey, fontSize: 12);
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       shape: RoundedRectangleBorder(
@@ -205,14 +280,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             children: [
               GestureDetector(
                 onTap: () {
-                  if (authorAccount != null) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => CommunityProfileScreen(
-                              account: authorAccount)),
-                    );
-                  }
+                  if (authorAccount != null) _openProfile(authorAccount);
                 },
                 child: communityAvatar(
                   bytes: p.authorAvatar,
@@ -241,6 +309,31 @@ class _CommunityScreenState extends State<CommunityScreen> {
                           const SizedBox(width: 6),
                           LevelBadge(account: authorAccount),
                         ],
+                        if (p.achievement.isNotEmpty) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 1),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color: const Color(0xFFD4A017)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.emoji_events_outlined,
+                                    size: 12, color: Color(0xFFD4A017)),
+                                const SizedBox(width: 2),
+                                Text(tr('achievement_badge'),
+                                    style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xFFD4A017),
+                                        fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -257,9 +350,32 @@ class _CommunityScreenState extends State<CommunityScreen> {
                           style: TextStyle(color: grey, fontSize: 13)),
                     ],
                     const SizedBox(height: 6),
-                    Text(
-                      '${CommunityStore.formatTime(p.time)} · ${p.board} · 回复 ${p.comments.length} · 点赞 ${p.likedBy.length}',
-                      style: TextStyle(color: grey, fontSize: 12),
+                    Row(
+                      children: [
+                        Text(
+                            '${CommunityStore.formatTime(p.time)} · ',
+                            style: metaStyle),
+                        Flexible(
+                          child: GestureDetector(
+                            onTap: () => _openBoard(p.board),
+                            child: Text(trBoard(p.board),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    color: communityAccent,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                        Text(
+                            tr('feed_replies_prefix') +
+                                '${p.comments.length}' +
+                                tr('feed_replies_suffix') +
+                                tr('feed_likes_prefix') +
+                                '${p.likedBy.length}' +
+                                tr('feed_likes_suffix'),
+                            style: metaStyle),
+                      ],
                     ),
                   ],
                 ),
@@ -283,492 +399,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
-  Widget _sectionTitle(String title, {VoidCallback? onViewAll}) {
-    return Row(
-      children: [
-        Text(title,
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-        const Spacer(),
-        if (onViewAll != null)
-          TextButton(onPressed: onViewAll, child: const Text('查看全部')),
-      ],
-    );
-  }
-
-  Widget _topSwitch() {
-    const bronze = Color(0xFF6B5B3E);
-    Widget tab(IconData icon, String label, String view) {
-      final selected = _view == view;
-      return Expanded(
-        child: InkWell(
-          onTap: () => setState(() => _view = view),
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 9),
-            decoration: BoxDecoration(
-              color: selected ? bronze : Colors.transparent,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon,
-                    size: 18,
-                    color: selected ? Colors.white : null),
-                const SizedBox(width: 6),
-                Text(label,
-                    style: TextStyle(
-                        color: selected ? Colors.white : null,
-                        fontWeight: selected
-                            ? FontWeight.bold
-                            : FontWeight.normal)),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        children: [
-          tab(Icons.dynamic_feed_outlined, '动态', 'feed'),
-          tab(Icons.forum_outlined, '社区', 'home'),
-        ],
-      ),
-    );
-  }
-
-  Widget _feedView(CommunityAccount? current, Color grey) {
-    final feed = _feedPosts(current);
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 110),
-      children: [
-        if (!kReleaseMode) ...[
-          Text(tr('community_note'),
-              style: TextStyle(color: grey, fontSize: 12)),
-          const SizedBox(height: 10),
-        ],
-        // 搜索：上面这一个药丸框就是输入框，点开后直接在里面输入，
-        // 不再在下面另起一个搜索框；收起用框内叉号。
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.grey.withValues(alpha: 0.4)),
-          ),
-          child: _showSearch
-              ? Row(
-                  children: [
-                    const Icon(Icons.search, size: 18),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: _searchCtrl,
-                        autofocus: true,
-                        onSubmitted: _search,
-                        // TextField 本身任何状态都不画框，只剩外层药丸容器一个框：
-                        // focusedBorder 不写会回落全局主题的橙色聚焦边，聚焦时
-                        // 药丸里会再冒出一个橙色框。
-                        decoration: const InputDecoration(
-                          hintText: '搜索帖子标题、内容、话题',
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          disabledBorder: InputBorder.none,
-                          errorBorder: InputBorder.none,
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    GestureDetector(
-                      onTap: () {
-                        _searchCtrl.clear();
-                        setState(() => _showSearch = false);
-                      },
-                      child: const Icon(Icons.close, size: 18),
-                    ),
-                  ],
-                )
-              : InkWell(
-                  onTap: () => setState(() => _showSearch = true),
-                  borderRadius: BorderRadius.circular(20),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.search, size: 18),
-                      const SizedBox(width: 8),
-                      Text('搜索帖子标题、内容、话题',
-                          style: TextStyle(color: grey, fontSize: 13)),
-                    ],
-                  ),
-                ),
-        ),
-        const SizedBox(height: 16),
-        // 内容流三档：最新 / 推荐 / 关注。
-        Row(
-          children: [
-            _segTab('最新', _feedTab == 'latest',
-                () => setState(() => _feedTab = 'latest')),
-            const SizedBox(width: 8),
-            _segTab('推荐', _feedTab == 'hot',
-                () => setState(() => _feedTab = 'hot')),
-            const SizedBox(width: 8),
-            _segTab('关注', _feedTab == 'following',
-                () => setState(() => _feedTab = 'following')),
-          ],
-        ),
-        const SizedBox(height: 12),
-        if (feed.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(Icons.forum_outlined, size: 48, color: grey),
-                  const SizedBox(height: 12),
-                  Text(
-                    _feedTab == 'following'
-                        ? '还没有关注任何板块或用户'
-                        : '还没有人晒枪 · 去图鉴选一把，发第一条',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: grey),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton(
-                    onPressed: _openComposer,
-                    child: const Text('发第一条'),
-                  ),
-                ],
-              ),
-            ),
-          )
-        else
-          ...feed.map((p) => _postCard(p, grey)),
-        const SizedBox(height: 8),
-      ],
-    );
-  }
-
-  Widget _boardGridItem(String board, Color grey) {
-    final count = _boardCount(board);
-    return Card(
-      margin: EdgeInsets.zero,
-      child: InkWell(
-        onTap: () => _openBoard(board),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(
-                height: 44,
-                child: Image.asset(boardCover(board), fit: BoxFit.contain),
-              ),
-              const SizedBox(height: 6),
-              Text(board,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 13)),
-              Text('$count 帖', style: TextStyle(color: grey, fontSize: 11)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _eventRow(IconData icon, String title, String subtitle) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFF8C6A2F), width: 1.5),
-        ),
-        child: Icon(icon, size: 18, color: const Color(0xFF8C6A2F)),
-      ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-      subtitle: Text(subtitle),
-      trailing: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: communityAccent.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: const Text('敬请期待',
-            style: TextStyle(
-                color: communityAccent,
-                fontSize: 12,
-                fontWeight: FontWeight.bold)),
-      ),
-      onTap: _showEventSoon,
-    );
-  }
-
-  Widget _rankNumber(int rank) {
-    final color = rank == 1
-        ? const Color(0xFFD4AF37)
-        : rank == 2
-            ? const Color(0xFF9AA0A6)
-            : rank == 3
-                ? const Color(0xFFCD7F32)
-                : Colors.grey;
-    return Container(
-      width: 22,
-      height: 22,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-      child: Text('$rank',
-          style: const TextStyle(
-              color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-    );
-  }
-
-  Widget _rankingSection(CommunityAccount? current, Color grey) {
-    final accounts = communityStore.accounts.toList();
-    accounts.sort((a, b) => b.totalXp.compareTo(a.totalXp));
-    final boards = communityBoards
-        .where((b) => !communityStore.disabledBoards.contains(b))
-        .toList();
-    boards.sort((a, b) =>
-        communityStore.boardHeat(b).compareTo(communityStore.boardHeat(a)));
-    int? myRank;
-    if (current != null) {
-      final i = accounts.indexWhere((a) => a.id == current.id);
-      if (i >= 0) myRank = i + 1;
-    }
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (current != null && myRank != null) ...[
-              Row(
-                children: [
-                  communityAvatar(
-                    bytes: current.avatarBytes,
-                    color: current.avatarColor,
-                    nickname: current.nickname,
-                    radius: 16,
-                    frame: current.avatarFrame,
-                    verified: isSpecialAccount(current),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text('我的排名：本机第 $myRank 名',
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                  LevelBadge(account: current),
-                ],
-              ),
-              const Divider(height: 24),
-            ],
-            const Text('经验榜',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            const SizedBox(height: 8),
-            if (accounts.isEmpty)
-              Text('暂无本机账号，注册后参与排行',
-                  style: TextStyle(color: grey, fontSize: 13))
-            else
-              for (var i = 0; i < accounts.length && i < 3; i++)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
-                      _rankNumber(i + 1),
-                      const SizedBox(width: 10),
-                      communityAvatar(
-                        bytes: accounts[i].avatarBytes,
-                        color: accounts[i].avatarColor,
-                        nickname: accounts[i].nickname,
-                        radius: 14,
-                        frame: accounts[i].avatarFrame,
-                        verified: isSpecialAccount(accounts[i]),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(accounts[i].nickname,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                      Text('经验 ${accounts[i].totalXp}',
-                          style: TextStyle(color: grey, fontSize: 12)),
-                    ],
-                  ),
-                ),
-            const Divider(height: 24),
-            const Text('板块热度榜',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            const SizedBox(height: 8),
-            for (var i = 0; i < boards.length && i < 3; i++)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: [
-                    _rankNumber(i + 1),
-                    const SizedBox(width: 10),
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                            color: const Color(0xFF8C6A2F), width: 1.5),
-                      ),
-                      child: Icon(boardIcon(boards[i]),
-                          size: 14, color: const Color(0xFF8C6A2F)),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(boards[i],
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                    Text(
-                        '${_boardCount(boards[i])} 帖 · 热度 ${communityStore.boardHeat(boards[i])}',
-                        style: TextStyle(color: grey, fontSize: 12)),
-                  ],
-                ),
-              ),
-            Text('本机排行榜，仅含本机注册账号',
-                style: TextStyle(color: grey, fontSize: 12)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 签到区：做小一点、暗红色，放在活动下面。
-  Widget _tasksSection(CommunityAccount? current, Color grey) {
-    const darkRed = Color(0xFF8B1E1E);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (current == null)
-              Row(
-                children: [
-                  Expanded(
-                    child: Text('登录后参与每日签到与任务',
-                        style: TextStyle(color: grey)),
-                  ),
-                  TextButton(
-                    onPressed: () => showLoginDialog(context),
-                    child: Text(tr('login')),
-                  ),
-                ],
-              )
-            else ...[
-              XpProgressRow(
-                account: current,
-                accent: darkRed,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const CommunityTasksScreen()),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _checkIn,
-                      icon: Icon(
-                          current.checkedInToday
-                              ? Icons.check_circle
-                              : Icons.event_available_outlined,
-                          size: 18),
-                      label: Text(current.checkedInToday
-                          ? '已签到 · 连签 ${current.checkInStreak} 天'
-                          : '每日签到'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: darkRed,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const CommunityTasksScreen()),
-                      ),
-                      child: const Text('查看任务'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _homeView(CommunityAccount? current, Color grey) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 110),
-      children: [
-        _sectionTitle('平台活动'),
-        const SizedBox(height: 10),
-        Card(
-          child: Column(
-            children: [
-              _eventRow(Icons.emoji_events_outlined, '晒枪大赛', '全站晒枪主题活动'),
-              const Divider(height: 1),
-              _eventRow(Icons.calendar_month_outlined, '每月主题', '每月一期枪械主题讨论'),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-        _sectionTitle('签到'),
-        const SizedBox(height: 10),
-        _tasksSection(current, grey),
-        const SizedBox(height: 20),
-        _sectionTitle('全部板块'),
-        const SizedBox(height: 10),
-        GridView.count(
-          crossAxisCount: 3,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          childAspectRatio: 0.95,
-          children: [
-            for (final b in communityBoards.where(
-        (b) => !communityStore.disabledBoards.contains(b)))
-              _boardGridItem(b, grey),
-          ],
-        ),
-        const SizedBox(height: 20),
-        _sectionTitle('排行榜', onViewAll: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (_) => const CommunityLeaderboardScreen()),
-          );
-        }),
-        const SizedBox(height: 10),
-        _rankingSection(current, grey),
-        const SizedBox(height: 8),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
@@ -779,7 +409,13 @@ class _CommunityScreenState extends State<CommunityScreen> {
         animation: communityStore,
         builder: (_, __) {
           final current = communityStore.current;
-          _maybeOnboarding(current);
+          final unreadDm = current == null
+              ? 0
+              : communityStore
+                  .notificationsFor(current.id)
+                  .where((n) => n.kind == 'dm' && !n.read)
+                  .length;
+          final feed = _feedPosts(current);
           return Scaffold(
             // 内层 Scaffold 不跟键盘走：键盘弹起时 body 不收缩，
             // 右下角发帖钮（Positioned bottom: 100）不再跟着上移。
@@ -791,41 +427,182 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   top: MediaQuery.of(context).padding.top + kToolbarHeight),
               child: Column(
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                     child: Row(
                       children: [
-                        Text('社区',
-                            style: TextStyle(
+                        Text(tr('community_title'),
+                            style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold)),
+                        const Spacer(),
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            IconButton(
+                              tooltip: tr('my_dms'),
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        const CommunityDmScreen()),
+                              ),
+                              icon: const Icon(Icons.mail_outlined),
+                            ),
+                            if (unreadDm > 0)
+                              Positioned(
+                                right: 6,
+                                top: 6,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 5, vertical: 1),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Text(
+                                      unreadDm > 99 ? '99+' : '$unreadDm',
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold)),
+                                ),
+                              ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                    child: _topSwitch(),
-                  ),
-                Expanded(
-                  child: Stack(
-                    children: [
-                      AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeIn,
-                    // 只淡入，不上下滑动：上下一震的动效就是这里的 Slide 造成的。
-                    transitionBuilder: (child, anim) =>
-                        FadeTransition(opacity: anim, child: child),
-                    child: KeyedSubtree(
-                      key: ValueKey(_view),
-                      child: _view == 'feed'
-                          ? _feedView(current, grey)
-                          : _homeView(current, grey),
-                    ),
-                  ),
-                      // 动态页右下角发帖钮：大号圆形液态玻璃（草稿箱已去掉，
-                      // 草稿仍在发帖器里自动带出，不用单独入口）。
-                      if (_view == 'feed')
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        ListView(
+                          padding:
+                              const EdgeInsets.fromLTRB(16, 8, 16, 110),
+                          children: [
+                            if (!kReleaseMode) ...[
+                              Text(tr('community_note'),
+                                  style:
+                                      TextStyle(color: grey, fontSize: 12)),
+                              const SizedBox(height: 10),
+                            ],
+                            // 搜索：上面这一个药丸框就是输入框，点开后直接在里面输入，
+                            // 不再在下面另起一个搜索框；收起用框内叉号。
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 10),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                    color: Colors.grey.withValues(alpha: 0.4)),
+                              ),
+                              child: _showSearch
+                                  ? Row(
+                                      children: [
+                                        const Icon(Icons.search, size: 18),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: TextField(
+                                            controller: _searchCtrl,
+                                            autofocus: true,
+                                            onSubmitted: _search,
+                                            // TextField 本身任何状态都不画框，只剩外层药丸容器一个框：
+                                            // focusedBorder 不写会回落全局主题的橙色聚焦边，聚焦时
+                                            // 药丸里会再冒出一个橙色框。
+                                            decoration: InputDecoration(
+                                              hintText: tr('feed_search_hint'),
+                                              border: InputBorder.none,
+                                              enabledBorder: InputBorder.none,
+                                              focusedBorder: InputBorder.none,
+                                              disabledBorder: InputBorder.none,
+                                              errorBorder: InputBorder.none,
+                                              isDense: true,
+                                              contentPadding: EdgeInsets.zero,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        GestureDetector(
+                                          onTap: () {
+                                            _searchCtrl.clear();
+                                            setState(
+                                                () => _showSearch = false);
+                                          },
+                                          child: const Icon(Icons.close,
+                                              size: 18),
+                                        ),
+                                      ],
+                                    )
+                                  : InkWell(
+                                      onTap: () => setState(
+                                          () => _showSearch = true),
+                                      borderRadius: BorderRadius.circular(20),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.search, size: 18),
+                                          const SizedBox(width: 8),
+                                          Text(tr('feed_search_hint'),
+                                              style: TextStyle(
+                                                  color: grey,
+                                                  fontSize: 13)),
+                                        ],
+                                      ),
+                                    ),
+                            ),
+                            const SizedBox(height: 16),
+                            // 内容流三档：最新 / 推荐 / 关注。
+                            Row(
+                              children: [
+                                _segTab(tr('feed_latest'),
+                                    _feedTab == 'latest',
+                                    () => setState(
+                                        () => _feedTab = 'latest')),
+                                const SizedBox(width: 8),
+                                _segTab(tr('feed_hot'), _feedTab == 'hot',
+                                    () => setState(() => _feedTab = 'hot')),
+                                const SizedBox(width: 8),
+                                _segTab(tr('feed_following'),
+                                    _feedTab == 'following',
+                                    () => setState(
+                                        () => _feedTab = 'following')),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            _rankStrip(current, grey),
+                            const SizedBox(height: 12),
+                            if (feed.isEmpty)
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 24),
+                                child: Center(
+                                  child: Column(
+                                    children: [
+                                      Icon(Icons.forum_outlined,
+                                          size: 48, color: grey),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        _feedTab == 'following'
+                                            ? tr('feed_empty_following')
+                                            : tr('feed_empty'),
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(color: grey),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      OutlinedButton(
+                                        onPressed: _openComposer,
+                                        child: Text(tr('feed_post_first')),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            else
+                              ...feed.map((p) => _postCard(p, grey)),
+                            const SizedBox(height: 8),
+                          ],
+                        ),
+                        // 动态页右下角发帖钮：大号圆形液态玻璃（草稿箱已去掉，
+                        // 草稿仍在发帖器里自动带出，不用单独入口）。
                         Positioned(
                           right: 16,
                           bottom: 100,
@@ -883,9 +660,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
                             ),
                           ),
                         ),
-                    ],
-                ),
-                ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),

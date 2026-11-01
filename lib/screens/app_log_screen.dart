@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../i18n.dart';
 import 'package:flutter/services.dart';
 import '../app_log.dart';
 import '../widgets/app_top_bar.dart';
@@ -30,63 +31,63 @@ class _AppLogScreenState extends State<AppLogScreen> {
   Future<void> _copyAll() async {
     if (_entries.isEmpty) return;
     await Clipboard.setData(ClipboardData(text: _entries.join('\n')));
-    if (mounted) showAppToast(context, '设备日志已复制');
+    if (mounted) showAppToast(context, tr('app_log_copied'));
   }
 
   Future<void> _confirmClear() async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('清空设备日志？'),
-        content: const Text('清空后旧的事件记录就找不回来了。'),
+        title: Text(tr('app_log_clear_title')),
+        content: Text(tr('app_log_clear_body')),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('取消')),
+              child: Text(tr('cancel'))),
           TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('清空')),
+              child: Text(tr('app_log_clear'))),
         ],
       ),
     );
     if (ok != true) return;
     await clearAppLog();
     await _reload();
-    if (mounted) showAppToast(context, '设备日志已清空');
+    if (mounted) showAppToast(context, tr('app_log_cleared'));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const SubPageAppBar(title: '设备日志'),
+      appBar: SubPageAppBar(title: tr('app_log_title')),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                      '只记语音识别、保存失败等关键事件摘要，不记账号与帖子内容。',
+                      tr('app_log_note'),
                       style: TextStyle(color: Colors.grey, fontSize: 12)),
                 ),
                 TextButton.icon(
                   onPressed: _entries.isEmpty ? null : _copyAll,
                   icon: const Icon(Icons.copy, size: 18),
-                  label: const Text('复制全部'),
+                  label: Text(tr('app_log_copy_all')),
                 ),
                 TextButton.icon(
                   onPressed: _entries.isEmpty ? null : _confirmClear,
                   icon: const Icon(Icons.delete_outline, size: 18),
-                  label: const Text('清空'),
+                  label: Text(tr('app_log_clear')),
                 ),
               ],
             ),
           ),
           Expanded(
             child: _entries.isEmpty
-                ? const Center(
-                    child: Text('暂无日志。',
+                ? Center(
+                    child: Text(tr('app_log_empty'),
                         style: TextStyle(color: Colors.grey)))
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),

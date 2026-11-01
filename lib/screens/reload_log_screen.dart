@@ -126,6 +126,40 @@ class ReloadLogScreen extends StatefulWidget {
   State<ReloadLogScreen> createState() => _ReloadLogScreenState();
 }
 
+String _pressureLabel(String o) {
+  switch (o) {
+    case '底火压平':
+      return tr('log_pressure_flat');
+    case '底火 crater':
+      return tr('log_pressure_crater');
+    case '抛壳挺亮印/退壳困难':
+      return tr('log_pressure_eject');
+    case '枪机难开':
+      return tr('log_pressure_bolt');
+    case '底火窝变松漏气':
+      return tr('log_pressure_pocket');
+    default:
+      return o;
+  }
+}
+
+String _weatherLabel(String w) {
+  switch (w) {
+    case '晴':
+      return tr('log_weather_sunny');
+    case '阴':
+      return tr('log_weather_cloudy');
+    case '雨':
+      return tr('log_weather_rainy');
+    case '雪':
+      return tr('log_weather_snowy');
+    case '室内':
+      return tr('log_weather_indoor');
+    default:
+      return w;
+  }
+}
+
 class _ReloadLogScreenState extends State<ReloadLogScreen> {
   late List<bool> _done;
   // SOP 区默认收起，只留一行摘要 + 进度条，点开才是紧凑清单；
@@ -252,23 +286,23 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
     final miss = <String>[];
     final doneCount = _done.where((d) => d).length;
     if (doneCount != reloadSopSteps.length) {
-      miss.add('SOP 未全部打勾（$doneCount/${reloadSopSteps.length}）');
+      miss.add(tr('log_sop_incomplete_prefix') + '$doneCount/${reloadSopSteps.length}' + tr('log_sop_incomplete_suffix'));
     }
-    if (_caliber == null) miss.add('口径');
+    if (_caliber == null) miss.add(tr('log_field_caliber'));
     final fields = {
-      '弹头': _bulletCtrl.text.trim(),
-      '火药': _powderCtrl.text.trim(),
-      '装药量': _chargeCtrl.text.trim(),
-      '弹长 COL': _colCtrl.text.trim(),
-      '数量': _roundsCtrl.text.trim(),
-      '底火': _primerCtrl.text.trim(),
-      '火药/底火批号': _lotCtrl.text.trim(),
-      '弹壳品牌': _caseBrandCtrl.text.trim(),
-      '弹壳使用次数': _caseTimesCtrl.text.trim(),
-      '初速': _velocityCtrl.text.trim(),
-      '散布': _groupCtrl.text.trim(),
-      '试射枪械': _firearmCtrl.text.trim(),
-      '天气/温度': _weatherCtrl.text.trim(),
+      tr('log_field_bullet'): _bulletCtrl.text.trim(),
+      tr('log_field_powder'): _powderCtrl.text.trim(),
+      tr('log_field_charge'): _chargeCtrl.text.trim(),
+      tr('log_field_col'): _colCtrl.text.trim(),
+      tr('log_field_rounds'): _roundsCtrl.text.trim(),
+      tr('log_field_primer'): _primerCtrl.text.trim(),
+      tr('log_field_lot'): _lotCtrl.text.trim(),
+      tr('log_field_case_brand'): _caseBrandCtrl.text.trim(),
+      tr('log_field_case_times'): _caseTimesCtrl.text.trim(),
+      tr('log_field_velocity'): _velocityCtrl.text.trim(),
+      tr('log_field_group'): _groupCtrl.text.trim(),
+      tr('log_field_firearm'): _firearmCtrl.text.trim(),
+      tr('log_field_weather'): _weatherCtrl.text.trim(),
     };
     fields.forEach((k, v) {
       if (v.isEmpty) miss.add(k);
@@ -276,19 +310,19 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
     double? num(String v) => double.tryParse(v);
     if (_chargeCtrl.text.trim().isNotEmpty &&
         (num(_chargeCtrl.text.trim()) ?? 0) <= 0) {
-      miss.add('装药量须为大于 0 的数字');
+      miss.add(tr('log_num_charge'));
     }
     if (_colCtrl.text.trim().isNotEmpty &&
         (num(_colCtrl.text.trim()) ?? 0) <= 0) {
-      miss.add('弹长 COL 须为大于 0 的数字');
+      miss.add(tr('log_num_col'));
     }
     if (_roundsCtrl.text.trim().isNotEmpty &&
         (num(_roundsCtrl.text.trim()) ?? 0) <= 0) {
-      miss.add('数量须为大于 0 的数字');
+      miss.add(tr('log_num_rounds'));
     }
     if (_caseTimesCtrl.text.trim().isNotEmpty &&
         (num(_caseTimesCtrl.text.trim()) ?? 0) < 1) {
-      miss.add('弹壳使用次数须为大于等于 1 的数字');
+      miss.add(tr('log_num_case_times'));
     }
     return miss;
   }
@@ -336,7 +370,7 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
       return (
         load: null,
         inRange: false,
-        note: '无手册对照：本组合在手册装药表里没有完全对应的条目'
+        note: tr('log_note_no_manual')
       );
     }
     final charge = _num(_chargeCtrl.text.trim());
@@ -348,27 +382,27 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
       return (
         load: load,
         inRange: false,
-        note: '装药量 $charge gr 超过手册最大装药 $max gr（${load.manual}），不能放行'
+        note: tr('log_note_over_prefix') + '$charge' + tr('log_note_over_mid') + '$max' + tr('log_note_over_mid2') + load.manual + tr('log_note_over_suffix')
       );
     }
     if (col != null && manualCol != null && col < manualCol) {
       return (
         load: load,
         inRange: false,
-        note: '弹长 COL $col″ 短于手册值 $manualCol″（${load.manual}），不能放行'
+        note: tr('log_note_col_prefix') + '$col' + tr('log_note_col_mid') + '$manualCol' + tr('log_note_col_mid2') + load.manual + tr('log_note_col_suffix')
       );
     }
     if (charge != null && start != null && charge < start) {
       return (
         load: load,
         inRange: false,
-        note: '装药量 $charge gr 低于手册起始装药 $start gr（${load.manual}），不能放行'
+        note: tr('log_note_under_prefix') + '$charge' + tr('log_note_under_mid') + '$start' + tr('log_note_under_mid2') + load.manual + tr('log_note_under_suffix')
       );
     }
     return (
       load: load,
       inRange: true,
-      note: '手册对照：${load.manual}，起始 $start gr / 最大 $max gr / COL $manualCol″，装药在区间内'
+      note: tr('log_note_ok_prefix') + load.manual + tr('log_note_ok_mid_a') + '$start' + tr('log_note_ok_mid_b') + '$max' + tr('log_note_ok_mid_c') + '$manualCol' + tr('log_note_ok_suffix')
     );
   }
 
@@ -413,7 +447,7 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
   /// 弹壳品牌与次数），不带试射结果、批号、压力与 SOP，仍须重走放行。
   void _reuseLastCaliberRecipe() {
     if (_caliber == null) {
-      showAppToast(context, '先选口径');
+      showAppToast(context, tr('log_pick_caliber_first'));
       return;
     }
     ReloadLogEntry? last;
@@ -424,7 +458,7 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
       }
     }
     if (last == null) {
-      showAppToast(context, '该口径还没有已放行记录');
+      showAppToast(context, tr('log_no_released_caliber'));
       return;
     }
     setState(() {
@@ -436,7 +470,7 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
       _caseBrandCtrl.text = last.caseBrand;
       _caseTimesCtrl.text = last.caseTimes;
     });
-    showAppToast(context, '已带入上次配方，试射结果请重填');
+    showAppToast(context, tr('log_recipe_carried'));
   }
 
   /// 语音备注：只把识别文本追加为备注草稿，绝不填装药量、COL、
@@ -446,7 +480,7 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
     if (!mounted) return;
     if (text == null || text.trim().isEmpty) {
       appLog('voice', '识别无结果或本机无识别服务');
-      showAppToast(context, '没有识别到语音，或本机没有语音识别服务');
+      showAppToast(context, tr('log_voice_none'));
       return;
     }
     appLog('voice', '识别成功，已填入备注草稿');
@@ -454,7 +488,7 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
       final cur = _noteCtrl.text.trim();
       _noteCtrl.text = cur.isEmpty ? text.trim() : '$cur $text'.trim();
     });
-    showAppToast(context, '语音已转成文字草稿，请核对后再保存');
+    showAppToast(context, tr('log_voice_draft'));
   }
 
   double? _grOf(String s) {
@@ -472,18 +506,21 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
     await showDialog(
       context: context,
       builder: (ctx) => GlassDialog(
-        title: '安全红线',
+        title: tr('reload_safety_title'),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
-          children: reloadSafetyRules
+          // 英文界面显示英文版安全规则（与中文表一一对应，中文原文不动）。
+          children: (localeNotifier.value == localeEn
+                  ? reloadSafetyRulesEn
+                  : reloadSafetyRules)
               .map((r) => Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Text('· $r'),
                   ))
               .toList(),
         ),
-        actions: [glassPrimaryButton(ctx, '知道了')],
+        actions: [glassPrimaryButton(ctx, tr('got_it'))],
       ),
     );
   }
@@ -511,7 +548,7 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
       _scaleChecks = 0;
       _done = List<bool>.filled(reloadSopSteps.length, false);
     });
-    showAppToast(context, '已载入配方，请重新走 SOP、重测并放行');
+    showAppToast(context, tr('log_recipe_loaded'));
   }
 
   void _clearForm() {
@@ -545,12 +582,12 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
       await showDialog(
         context: context,
         builder: (ctx) => GlassDialog(
-          title: '未通过放行检测',
+          title: tr('log_release_fail_title'),
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('以下内容未填完整或不符合 SOP，补齐后才能放行记录：'),
+              Text(tr('log_release_fail_note')),
               const SizedBox(height: 8),
               ...miss.map((m) => Padding(
                     padding: const EdgeInsets.only(bottom: 4),
@@ -558,7 +595,7 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                   )),
             ],
           ),
-          actions: [glassPrimaryButton(ctx, '知道了')],
+          actions: [glassPrimaryButton(ctx, tr('got_it'))],
         ),
       );
       return;
@@ -567,7 +604,7 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
     if (_pressure.isNotEmpty) {
       _insertEntry(released: false);
       if (mounted) {
-        showAppToast(context, '本批有压力迹象，已保存为异常停用记录，未放行');
+        showAppToast(context, tr('log_pressure_saved'));
       }
       return;
     }
@@ -578,25 +615,25 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
       final saveOnly = await showDialog<bool>(
         context: context,
         builder: (ctx) => GlassDialog(
-          title: '手册对照未通过',
-          content: Text('${manual.note}。可以仅保存为未放行记录，绝不标已放行。'),
+          title: tr('log_manual_fail_title'),
+          content: Text(manual.note + tr('log_manual_fail_suffix')),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('返回修改'),
+              child: Text(tr('log_back_edit')),
             ),
-            glassPrimaryButton(ctx, '仅保存为未放行记录', popTrue: true),
+            glassPrimaryButton(ctx, tr('log_save_unreleased'), popTrue: true),
           ],
         ),
       );
       if (saveOnly == true) {
         _insertEntry(released: false);
-        if (mounted) showAppToast(context, '已保存为未放行记录');
+        if (mounted) showAppToast(context, tr('log_saved_unreleased'));
       }
       return;
     }
     _insertEntry(released: true);
-    if (mounted) showAppToast(context, '已通过 SOP 与手册检测，放行并保存记录');
+    if (mounted) showAppToast(context, tr('log_released_saved'));
   }
 
   @override
@@ -607,17 +644,17 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
     final doneCount = _done.where((d) => d).length;
     final allDone = doneCount == reloadSopSteps.length;
     return Scaffold(
-      appBar: SubPageAppBar(title: '复装记录 · SOP 执行'),
+      appBar: SubPageAppBar(title: tr('log_title')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('复装记录 · SOP 执行',
+          Text(tr('log_title'),
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
           Text('按步骤打勾，全部完成才能记一条；记录保存在本机，重启不丢。Tick off the SOP steps; all must be complete before a record can be released. Records stay on this device.',
               style: TextStyle(color: grey, fontSize: 12)),
           const SizedBox(height: 8),
-          const Text('① 选配方 → ② 执行 SOP → ③ 试射 → ④ 复核放行',
+          Text(tr('log_steps'),
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
           const SizedBox(height: 12),
           Card(
@@ -637,14 +674,14 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                             size: 20,
                             color: allDone ? Colors.green : bronze),
                         const SizedBox(width: 8),
-                        const Expanded(
-                          child: Text('执行 SOP',
+                        Expanded(
+                          child: Text(tr('log_run_sop'),
                               style: TextStyle(
                                   fontWeight: FontWeight.bold)),
                         ),
                         Text(
                             allDone
-                                ? '✓ 已完成'
+                                ? tr('log_done')
                                 : '$doneCount/${reloadSopSteps.length}',
                             style: TextStyle(
                                 color: allDone ? Colors.green : grey,
@@ -667,7 +704,13 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                   ),
                   if (_sopExpanded) ...[
                     const SizedBox(height: 4),
-                    ...reloadSopSteps.asMap().entries.map((e) =>
+                    // 英文界面显示英文版 SOP（与中文表一一对应，勾选状态按索引共用）。
+                    ...(localeNotifier.value == localeEn
+                            ? reloadSopStepsEn
+                            : reloadSopSteps)
+                        .asMap()
+                        .entries
+                        .map((e) =>
                         CheckboxListTile(
                           dense: true,
                           visualDensity: VisualDensity.compact,
@@ -686,7 +729,7 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                         onPressed: () => setState(() => _done =
                             List<bool>.filled(
                                 reloadSopSteps.length, false)),
-                        child: const Text('重置 SOP 打勾'),
+                        child: Text(tr('log_reset_sop')),
                       ),
                     ),
                   ],
@@ -702,7 +745,7 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
               icon: const Icon(Icons.warning_amber_outlined,
                   color: Colors.redAccent, size: 18),
               label: Text(
-                  '${tr('safety_rules')}（${reloadSafetyRules.length} 条，点开查看）'),
+                  tr('safety_rules') + tr('log_rules_mid_a') + '${reloadSafetyRules.length}' + tr('log_rules_mid_b')),
             ),
           ),
           const SizedBox(height: 24),
@@ -712,17 +755,17 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
           Text('四步填完：配方 → 组件 → 试射 → 放行检测。带 * 的必须填完整，备注选填；弹头、火药、底火、弹壳、枪械边输边从数据库里搜，点一下即填入，数据库里没有的也可手动填写。Complete in four steps: Recipe → Components → Test Results → Release Check. Fields marked * are required; Notes are optional.',
               style: TextStyle(color: grey, fontSize: 12)),
           const SizedBox(height: 12),
-          const Text('配方 Load Recipe *', style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(tr('log_section_recipe'), style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Row(
             children: [
-              const Text('口径 * / Caliber'),
+              Text(tr('log_caliber_field')),
               const SizedBox(width: 8),
               Expanded(
                 child: DropdownButton<String>(
                   value: _caliber,
                   isExpanded: true,
-                  hint: const Text('选口径'),
+                  hint: Text(tr('log_pick_caliber')),
                   items: reloadCalibers
                       .map((c) => DropdownMenuItem(
                           value: c.caliber, child: Text(c.caliber)))
@@ -738,13 +781,13 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
             child: OutlinedButton.icon(
               onPressed: _reuseLastCaliberRecipe,
               icon: const Icon(Icons.history, size: 18),
-              label: const Text('沿用上次同口径配方'),
+              label: Text(tr('log_reuse_recipe')),
             ),
           ),
           const SizedBox(height: 8),
-          _SuggestField(controller: _bulletCtrl, label: '弹头 * / Bullet（品牌/重量/型号）', kind: '弹头'),
+          _SuggestField(controller: _bulletCtrl, label: tr('log_bullet_field'), kind: '弹头'),
           const SizedBox(height: 8),
-          _SuggestField(controller: _powderCtrl, label: '火药 * / Powder（品牌/型号）', kind: '火药'),
+          _SuggestField(controller: _powderCtrl, label: tr('log_powder_field'), kind: '火药'),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -753,8 +796,8 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                   controller: _chargeCtrl,
                   keyboardType: TextInputType.number,
                   onChanged: (_) => setState(() {}),
-                  decoration: const InputDecoration(
-                    labelText: '装药量 * / Powder Charge（gr）',
+                  decoration: InputDecoration(
+                    labelText: tr('log_charge_field'),
                     border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                   ),
                 ),
@@ -765,8 +808,8 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                   controller: _colCtrl,
                   keyboardType: TextInputType.number,
                   onChanged: (_) => setState(() {}),
-                  decoration: const InputDecoration(
-                    labelText: '弹长 COL * / Overall Length（″）',
+                  decoration: InputDecoration(
+                    labelText: tr('log_col_field'),
                     border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                   ),
                 ),
@@ -778,8 +821,8 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
             controller: _roundsCtrl,
             keyboardType: TextInputType.number,
             onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(
-              labelText: '数量 * / Rounds（发）',
+            decoration: InputDecoration(
+              labelText: tr('log_rounds_field'),
               border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
             ),
           ),
@@ -790,7 +833,7 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      '数量 ≥10 发：装药过程中每 10 发复核一次秤（SOP 第 6 步），已复核 $_scaleChecks 次',
+                      tr('log_scale_prefix') + '$_scaleChecks' + tr('log_scale_suffix'),
                       style: const TextStyle(
                           color: Colors.amber, fontSize: 12),
                     ),
@@ -798,20 +841,20 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                   TextButton(
                     onPressed: () =>
                         setState(() => _scaleChecks++),
-                    child: const Text('已复核一次秤'),
+                    child: Text(tr('log_scale_check')),
                   ),
                 ],
               ),
             ),
           const SizedBox(height: 16),
-          const Text('组件与批号 Components & Lot *', style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(tr('log_section_components'), style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          _SuggestField(controller: _primerCtrl, label: '底火 * / Primer（品牌/型号）', kind: '底火'),
+          _SuggestField(controller: _primerCtrl, label: tr('log_primer_field'), kind: '底火'),
           const SizedBox(height: 8),
           TextField(
             controller: _lotCtrl,
-            decoration: const InputDecoration(
-              labelText: '火药/底火批号 * / Powder & Primer Lot',
+            decoration: InputDecoration(
+              labelText: tr('log_lot_field'),
               border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
             ),
           ),
@@ -819,15 +862,15 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
           Row(
             children: [
               Expanded(
-                child: _SuggestField(controller: _caseBrandCtrl, label: '弹壳品牌 * / Case Brand', kind: '弹壳'),
+                child: _SuggestField(controller: _caseBrandCtrl, label: tr('log_case_brand_field'), kind: '弹壳'),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: TextField(
                   controller: _caseTimesCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: '弹壳使用次数 * / Case Firings',
+                  decoration: InputDecoration(
+                    labelText: tr('log_case_times_field'),
                     border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                   ),
                 ),
@@ -835,11 +878,11 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          const Text('试射结果 Test Results *', style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(tr('log_section_test'), style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           _SuggestField(
             controller: _firearmCtrl,
-            label: '试射枪械 * / Test Firearm',
+            label: tr('log_firearm_field'),
             kind: '',
             customItems: guns.map((g) => '${g.vendor} ${g.name}').toList(),
           ),
@@ -850,8 +893,8 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                 child: TextField(
                   controller: _velocityCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: '初速 * / Muzzle Velocity（fps）',
+                  decoration: InputDecoration(
+                    labelText: tr('log_velocity_field'),
                     border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                   ),
                 ),
@@ -861,8 +904,8 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                 child: TextField(
                   controller: _groupCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: '散布 * / Group Size（100 码，″）',
+                  decoration: InputDecoration(
+                    labelText: tr('log_group_field'),
                     border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                   ),
                 ),
@@ -872,8 +915,8 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
           const SizedBox(height: 8),
           TextField(
             controller: _weatherCtrl,
-            decoration: const InputDecoration(
-              labelText: '天气/温度 * / Weather & Temperature',
+            decoration: InputDecoration(
+              labelText: tr('log_weather_field'),
               border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
             ),
           ),
@@ -882,21 +925,21 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
             spacing: 6,
             children: ['晴', '阴', '雨', '雪', '室内']
                 .map((w) => ActionChip(
-                      label: Text(w),
+                      label: Text(_weatherLabel(w)),
                       onPressed: () =>
                           setState(() => _weatherCtrl.text = w),
                     ))
                 .toList(),
           ),
           const SizedBox(height: 8),
-          const Text('压力迹象 Pressure Signs（勾选任何一项，本批即异常停用、不能放行）',
+          Text(tr('log_section_pressure'),
               style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 6,
             children: _pressureOptions
                 .map((o) => FilterChip(
-                      label: Text(o),
+                      label: Text(_pressureLabel(o)),
                       selected: _pressure.contains(o),
                       onSelected: (v) => setState(() {
                         if (v) {
@@ -913,10 +956,10 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
             controller: _noteCtrl,
             maxLines: 2,
             decoration: InputDecoration(
-              labelText: '备注 / Notes（选填 Optional：批次、试射结果等）',
+              labelText: tr('log_note_field'),
               suffixIcon: IconButton(
                 icon: const Icon(Icons.mic_outlined),
-                tooltip: '语音转文字草稿',
+                tooltip: tr('log_voice_tooltip'),
                 onPressed: _voiceNote,
               ),
               border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
@@ -939,8 +982,8 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                     Expanded(
                       child: Text(
                         miss.isEmpty
-                            ? '放行检测已通过：SOP 全部完成，必填项齐全'
-                            : '放行检测：还差 ${miss.length} 项（${miss.take(3).join('、')}${miss.length > 3 ? '…' : ''}）',
+                            ? tr('log_check_passed')
+                            : tr('log_check_left_prefix') + '${miss.length}' + tr('log_check_left_mid') + miss.take(3).join(tr('log_check_join')) + (miss.length > 3 ? '…' : '') + tr('log_check_left_suffix'),
                         style: TextStyle(
                             color: miss.isEmpty ? Colors.green : grey,
                             fontSize: 13,
@@ -966,20 +1009,20 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: _tryRelease,
-                    child: const Text('检测并放行记录 / Verify & Release'),
+                    child: Text(tr('log_verify_btn')),
                   ),
                 ),
                 if (miss.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
-                    child: Text('点“检测并放行记录”会列出全部未通过项',
+                    child: Text(tr('log_verify_hint'),
                         style: TextStyle(color: grey, fontSize: 12)),
                   ),
               ],
             );
           }),
           const SizedBox(height: 16),
-          Text('已记 ${_logs.length} 条',
+          Text(tr('log_count_prefix') + '${_logs.length}' + tr('log_count_suffix'),
               style:
                   const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
@@ -1019,10 +1062,10 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                                   ),
                                   child: Text(
                                       l.released
-                                          ? '已放行'
+                                          ? tr('log_status_released')
                                           : l.pressure.isNotEmpty
-                                              ? '异常停用'
-                                              : '未放行',
+                                              ? tr('log_status_flagged')
+                                              : tr('log_status_unreleased'),
                                       style: TextStyle(
                                           color: l.released
                                               ? Colors.green
@@ -1036,13 +1079,13 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.replay, size: 20),
-                            tooltip: '复用此配方',
+                            tooltip: tr('log_reuse_tooltip'),
                             onPressed: () => _reuseRecipe(l),
                           ),
                           IconButton(
                             icon: const Icon(Icons.calculate_outlined,
                                 size: 20),
-                            tooltip: '算动能/后坐力',
+                            tooltip: tr('reload_calc_energy'),
                             onPressed: () => Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -1052,7 +1095,7 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                                   initialPowderGr:
                                       double.tryParse(l.charge),
                                   initialLabel:
-                                      '复装记录 ${l.batchNo.isNotEmpty ? l.batchNo : l.date} · ${l.caliber}',
+                                      tr('log_share_prefix') + '${l.batchNo.isNotEmpty ? l.batchNo : l.date} · ${l.caliber}',
                                 ),
                               ),
                             ),
@@ -1060,7 +1103,7 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                           IconButton(
                             icon: const Icon(Icons.attach_money_outlined,
                                 size: 20),
-                            tooltip: '算这批成本',
+                            tooltip: tr('log_cost_tooltip'),
                             onPressed: () => Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -1070,7 +1113,7 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                                   initialRounds:
                                       int.tryParse(l.rounds),
                                   initialLabel:
-                                      '复装记录 ${l.batchNo.isNotEmpty ? l.batchNo : l.date} · ${l.caliber}',
+                                      tr('log_share_prefix') + '${l.batchNo.isNotEmpty ? l.batchNo : l.date} · ${l.caliber}',
                                 ),
                               ),
                             ),
@@ -1085,25 +1128,25 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                         ],
                       ),
                       if (l.batchNo.isNotEmpty)
-                        Text('批次：${l.batchNo}',
+                        Text(tr('log_row_batch') + l.batchNo,
                             style: TextStyle(color: grey, fontSize: 12)),
                       if (l.pressure.isNotEmpty)
-                        Text('压力迹象：${l.pressure}',
+                        Text(tr('log_row_pressure') + l.pressure.split('、').map(_pressureLabel).join(tr('log_pressure_join')),
                             style: const TextStyle(color: Colors.red)),
-                      if (l.bullet.isNotEmpty) Text('弹头：${l.bullet}'),
-                      if (l.powder.isNotEmpty) Text('火药：${l.powder}'),
-                      if (l.charge.isNotEmpty) Text('装药：${l.charge} gr'),
-                      if (l.col.isNotEmpty) Text('弹长 COL：${l.col}″'),
-                      if (l.rounds.isNotEmpty) Text('数量：${l.rounds} 发'),
-                      if (l.primer.isNotEmpty) Text('底火：${l.primer}'),
-                      if (l.lot.isNotEmpty) Text('批号：${l.lot}'),
+                      if (l.bullet.isNotEmpty) Text(tr('log_row_bullet') + l.bullet),
+                      if (l.powder.isNotEmpty) Text(tr('log_row_powder') + l.powder),
+                      if (l.charge.isNotEmpty) Text(tr('log_row_charge') + '${l.charge} gr'),
+                      if (l.col.isNotEmpty) Text(tr('log_row_col') + '${l.col}″'),
+                      if (l.rounds.isNotEmpty) Text(tr('log_row_rounds') + '${l.rounds}' + tr('ammo_rounds_suffix')),
+                      if (l.primer.isNotEmpty) Text(tr('log_row_primer') + l.primer),
+                      if (l.lot.isNotEmpty) Text(tr('log_row_lot') + l.lot),
                       if (l.caseBrand.isNotEmpty)
-                        Text('弹壳：${l.caseBrand}${l.caseTimes.isNotEmpty ? '（第 ${l.caseTimes} 次）' : ''}'),
-                      if (l.velocity.isNotEmpty) Text('初速：${l.velocity} fps'),
-                      if (l.group.isNotEmpty) Text('散布：${l.group}″'),
-                      if (l.firearm.isNotEmpty) Text('试射枪械：${l.firearm}'),
-                      if (l.weather.isNotEmpty) Text('天气：${l.weather}'),
-                      if (l.note.isNotEmpty) Text('备注：${l.note}'),
+                        Text(tr('log_row_case') + l.caseBrand + (l.caseTimes.isNotEmpty ? tr('log_row_case_times_prefix') + l.caseTimes + tr('log_row_case_times_suffix') : '')),
+                      if (l.velocity.isNotEmpty) Text(tr('log_row_velocity') + '${l.velocity} fps'),
+                      if (l.group.isNotEmpty) Text(tr('log_row_group') + '${l.group}″'),
+                      if (l.firearm.isNotEmpty) Text(tr('log_row_firearm') + l.firearm),
+                      if (l.weather.isNotEmpty) Text(tr('log_row_weather') + _weatherLabel(l.weather)),
+                      if (l.note.isNotEmpty) Text(tr('log_row_note') + l.note),
                     ],
                   ),
                 ),
@@ -1203,9 +1246,9 @@ class _SuggestFieldState extends State<_SuggestField> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: sug.isEmpty
-                ? const Padding(
+                ? Padding(
                     padding: EdgeInsets.all(10),
-                    child: Text('数据库里没有这个型号，仍可手动填写',
+                    child: Text(tr('log_no_match_hint'),
                         style: TextStyle(color: Colors.grey, fontSize: 12)),
                   )
                 : Column(

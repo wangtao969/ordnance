@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../i18n.dart';
 import '../english_terms.dart';
 import '../models.dart';
 import '../widgets/app_top_bar.dart';
@@ -38,7 +39,7 @@ class KnifeDetailScreen extends StatelessWidget {
             child: KnifeSilhouette(type: knife.type, color: bronze),
           ),
           const SizedBox(height: 6),
-          Text('示意图为刀形剪影，非实物照片',
+          Text(tr('knife_note'),
               style: TextStyle(color: grey, fontSize: 11)),
           const SizedBox(height: 16),
           Text(knife.nameEn,
@@ -63,7 +64,11 @@ class KnifeDetailScreen extends StatelessWidget {
                 ),
               )),
           const SizedBox(height: 8),
-          Text(knife.description,
+          Text(
+              localeNotifier.value == localeEn &&
+                      knife.descriptionEn.isNotEmpty
+                  ? knife.descriptionEn
+                  : knife.description,
               style: TextStyle(color: ink, fontSize: 14, height: 1.6)),
         ],
       ),

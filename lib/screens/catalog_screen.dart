@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import '../community_store.dart';
 import '../data.dart';
+import '../gun_cabinet_data.dart';
 import '../english_terms.dart';
 import '../haptics.dart';
 import '../i18n.dart';
 import '../models.dart';
 import '../widgets/category_silhouette.dart';
 import '../widgets/app_top_bar.dart';
-import 'community_collection_screen.dart';
 import 'gun_cabinet_screen.dart';
 import '../news_data.dart';
 import 'news_screen.dart';
-import 'community_tasks_screen.dart';
 import 'gun_list_screen.dart';
 import 'gun_detail_screen.dart';
 import 'legend_list_screen.dart';
@@ -51,8 +50,12 @@ class _CatalogScreenState extends State<CatalogScreen> {
     // 今日一枪：按天取固定一把，当天不变、次日换枪。
     final todayGun = guns[
         DateTime.now().difference(DateTime(2020, 1, 1)).inDays % guns.length];
-    final myGuns = communityStore.current?.collection
+    // 首页枪柜模块：优先读枪柜内存镜像（枪柜页/迁移同步），
+    // 尚未加载时回落旧收藏快照（迁移前的冻结数据，统一映射成档案）。
+    final myGuns = cabinetProfilesCache ??
+        communityStore.current?.collection
             .where((c) => c.kind == 'gun' && c.status == 'owned')
+            .map((c) => GunProfile(gunName: c.gunName, rounds: c.rounds))
             .toList() ??
         [];
     final knifeResults = q.isEmpty
@@ -112,7 +115,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('枪械资讯',
+                              Text(tr('news_title'),
                                   style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14)),
@@ -171,7 +174,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('今日一枪',
+                              Text(tr('catalog_today'),
                                   style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14)),
@@ -204,7 +207,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                     children: [
                       Row(
                         children: [
-                          const Text('我的枪柜',
+                          Text(tr('cab_title'),
                               style: TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 14)),
                           const Spacer(),
@@ -218,7 +221,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                         const GunCabinetScreen()),
                               );
                             },
-                            child: Text('查看全部',
+                            child: Text(tr('catalog_view_all'),
                                 style: TextStyle(color: grey, fontSize: 12)),
                           ),
                         ],
@@ -245,12 +248,18 @@ class _CatalogScreenState extends State<CatalogScreen> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                      '${c.gunName} · ${c.caliber}',
+                                      // 档案里没有口径，按枪名回查图鉴；查不到只显示枪名。
+                                      guns
+                                              .where((g) =>
+                                                  g.name == c.gunName)
+                                              .isEmpty
+                                          ? c.gunName
+                                          : '${c.gunName} · ${guns.firstWhere((g) => g.name == c.gunName).caliber}',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(fontSize: 13)),
                                 ),
-                                Text('已打 ${c.rounds} 发',
+                                Text(tr('cab_rounds') + ' ${c.rounds} ' + tr('cab_rounds_suffix'),
                                     style: TextStyle(
                                         color: grey, fontSize: 12)),
                               ],
@@ -346,53 +355,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
               ),
             const SizedBox(height: 12),
             const SizedBox(height: 12),
-            // 收藏完成度 + 本期挑战（登录后显示，点进收藏柜 / 任务页）。
-            AnimatedBuilder(
-              animation: communityStore,
-              builder: (_, __) {
-                final me = communityStore.current;
-                if (me == null) return const SizedBox.shrink();
-                return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) =>
-                                      const CommunityCollectionScreen()),
-                            ),
-                            child: Text(
-                                '我的收藏 ${me.collection.length} / ${guns.length}',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13)),
-                          ),
-                        ),
-                        InkWell(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) =>
-                                    const CommunityTasksScreen()),
-                          ),
-                          child: Text(
-                              '本期挑战 ${communityStore.challengeDone(me)}/${challengeCatalog.length} 已完成',
-                              style: const TextStyle(
-                                  color: Color(0xFFE86A1C),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13)),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
             const SizedBox(height: 20),
             if (_query.isNotEmpty) ...[
               ...results.map((g) => Card(
@@ -415,7 +377,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                   )),
               if (knifeResults.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                Text('刀具',
+                Text(tr('catalog_knives_label'),
                     style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -446,7 +408,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                 Padding(
                   padding: const EdgeInsets.only(top: 24),
                   child: Center(
-                    child: Text('没有找到相关枪械或刀具',
+                    child: Text(tr('catalog_search_empty'),
                         style: TextStyle(color: grey)),
                   ),
                 ),
@@ -530,18 +492,18 @@ class _CatalogScreenState extends State<CatalogScreen> {
                 },
               ),
               const SizedBox(height: 6),
-              Text('品类图片来源：Wikimedia Commons（免费授权）',
+              Text(tr('catalog_img_credit'),
                   style: TextStyle(color: grey, fontSize: 11)),
               // 刀具图鉴：枪械品类下方单独的大类入口，不进 categories 列表
               //（该列表驱动枪械网格与计数，混入会串位）。
               const SizedBox(height: 24),
-              Text('刀具图鉴',
+              Text(tr('knife_title'),
                   style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: ink)),
               const SizedBox(height: 4),
-              Text('各国军刀与知名实用刀，按分类与国家筛选',
+              Text(tr('catalog_knives_sub'),
                   style: TextStyle(color: grey, fontSize: 13)),
               const SizedBox(height: 12),
               GestureDetector(
@@ -573,14 +535,14 @@ class _CatalogScreenState extends State<CatalogScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('走进刀具图鉴',
+                            Text(tr('catalog_enter_knives'),
                                 style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                     color: ink)),
                             const SizedBox(height: 4),
                             Text(
-                                '卡巴军刀、M9 刺刀、莫拉伴侣刀……共 ${knives.length} 把',
+                                '卡巴军刀、M9 刺刀、莫拉伴侣刀……' + tr('catalog_total_prefix') + '${knives.length}' + tr('catalog_total_suffix_knives'),
                                 style:
                                     TextStyle(color: grey, fontSize: 13)),
                           ],
@@ -599,7 +561,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                       fontWeight: FontWeight.bold,
                       color: ink)),
               const SizedBox(height: 4),
-              Text('已停产的经典名枪，与它们背后的历史和事件',
+              Text(tr('catalog_legends_sub'),
                   style: TextStyle(color: grey, fontSize: 13)),
               const SizedBox(height: 12),
               GestureDetector(
@@ -631,14 +593,14 @@ class _CatalogScreenState extends State<CatalogScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('走进停售名枪的陈列室',
+                            Text(tr('catalog_enter_legends'),
                                 style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                     color: ink)),
                             const SizedBox(height: 4),
                             Text(
-                                'M1 加兰德、Kar98k、STG44、汤普森……共 ${legends.length} 支',
+                                'M1 加兰德、Kar98k、STG44、汤普森……' + tr('catalog_total_prefix') + '${legends.length}' + tr('catalog_total_suffix_guns'),
                                 style:
                                     TextStyle(color: grey, fontSize: 13)),
                           ],

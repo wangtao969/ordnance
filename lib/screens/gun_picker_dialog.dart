@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import '../i18n.dart';
 import '../data.dart';
 import '../english_terms.dart';
 import '../models.dart';
 
-/// 从图鉴选一把枪：搜索框 + 列表，收藏柜与靶场成绩共用。
+/// 从图鉴选一把枪：搜索框 + 列表，枪柜与靶场成绩共用。
 Future<Gun?> showGunPickerDialog(BuildContext context) async {
   final ctrl = TextEditingController();
   var query = '';
@@ -23,7 +24,7 @@ Future<Gun?> showGunPickerDialog(BuildContext context) async {
                 .take(60)
                 .toList();
         return AlertDialog(
-          title: const Text('选一把枪'),
+          title: Text(tr('picker_title')),
           content: SizedBox(
             width: double.maxFinite,
             height: 420,
@@ -34,7 +35,7 @@ Future<Gun?> showGunPickerDialog(BuildContext context) async {
                   onChanged: (v) => setDialogState(() => query = v),
                   // 聚焦边与未聚焦同一支：只写 border 时聚焦会回落全局橙色边。
                   decoration: InputDecoration(
-                    hintText: '搜枪名、厂商、口径',
+                    hintText: tr('picker_hint'),
                     prefixIcon: const Icon(Icons.search),
                     border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                     enabledBorder: OutlineInputBorder(
@@ -54,7 +55,7 @@ Future<Gun?> showGunPickerDialog(BuildContext context) async {
                 const SizedBox(height: 8),
                 Expanded(
                   child: results.isEmpty
-                      ? const Center(child: Text('没有匹配的枪'))
+                      ? Center(child: Text(tr('picker_empty')))
                       : ListView.builder(
                           itemCount: results.length,
                           itemBuilder: (_, i) {
@@ -75,7 +76,7 @@ Future<Gun?> showGunPickerDialog(BuildContext context) async {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('取消'),
+              child: Text(tr('cancel')),
             ),
           ],
         );

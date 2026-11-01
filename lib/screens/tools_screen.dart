@@ -12,6 +12,9 @@ import 'maintenance_screen.dart';
 import 'range_tools_screen.dart';
 import 'range_trip_screen.dart';
 import 'reload_cost_screen.dart';
+import 'weather_screen.dart';
+import 'sensor_screen.dart';
+import 'ballistic_profile_screen.dart';
 import 'gun_picker_dialog.dart';
 import 'dope_screen.dart';
 import 'reloading_screen.dart';
@@ -43,7 +46,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
         padding: EdgeInsets.fromLTRB(
             16, MediaQuery.of(context).padding.top + kToolbarHeight + 16, 16, 110),
         children: [
-          const Text('查数据、算单位、对照参数都在这里；讨论请去社区板块。',
+          Text(tr('tools_note'),
               style: TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 16),
           // 单位制选择：精简成一行小开关（左英制、右公制），
@@ -60,10 +63,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
                     const Icon(Icons.straighten_outlined,
                         color: Color(0xFF8C6A2F), size: 20),
                     const SizedBox(width: 8),
-                    const Text('单位制',
+                    Text(tr('tools_units_title'),
                         style: TextStyle(fontWeight: FontWeight.bold)),
                     const Spacer(),
-                    Text('英制',
+                    Text(tr('tools_unit_imperial'),
                         style: TextStyle(
                             color: system == 'imperial'
                                 ? null
@@ -81,7 +84,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                         ),
                       ),
                     ),
-                    Text('公制',
+                    Text(tr('tools_unit_metric'),
                         style: TextStyle(
                             color:
                                 system == 'metric' ? null : Colors.grey,
@@ -93,8 +96,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
           ),
           _ToolTile(
             icon: Icons.handyman_outlined,
-            title: '配件目录',
-            subtitle: '按品类筛选的知名厂商配件',
+            title: tr('acc_catalog_title'),
+            subtitle: tr('tools_acc_sub'),
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const AccessoriesScreen()),
@@ -102,8 +105,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
           ),
           _ToolTile(
             icon: Icons.science_outlined,
-            title: '复装手册',
-            subtitle: '口径图鉴、装药表、供应商与 SOP（只收录手册原文）',
+            title: tr('tools_reload_title'),
+            subtitle: tr('tools_reload_sub'),
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const ReloadingScreen()),
@@ -111,8 +114,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
           ),
           _ToolTile(
             icon: Icons.inventory_outlined,
-            title: '弹药库存',
-            subtitle: '只记手头现存发数，不用登录，数据只存本机',
+            title: tr('tools_ammo_title'),
+            subtitle: tr('tools_ammo_sub'),
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -121,8 +124,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
           ),
           _ToolTile(
             icon: Icons.cleaning_services_outlined,
-            title: '保养记录',
-            subtitle: '清洁与换件记录，记枪名、日期与当时已打发数',
+            title: tr('tools_maint_title'),
+            subtitle: tr('tools_maint_sub'),
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const MaintenanceScreen()),
@@ -130,8 +133,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
           ),
           _ToolTile(
             icon: Icons.calculate_outlined,
-            title: '装药工具',
-            subtitle: '单位换算、枪口动能、后坐力（只算你输入的数，不给装药建议）',
+            title: tr('tools_load_title'),
+            subtitle: tr('tools_load_sub'),
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const LoadToolsScreen()),
@@ -139,8 +142,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
           ),
           _ToolTile(
             icon: Icons.gps_fixed,
-            title: '靶场换算',
-            subtitle: '散布换算 MOA/密位与速查表，只算你输入的数；归零调瞄去 DOPE数据本',
+            title: tr('tools_range_title'),
+            subtitle: tr('tools_range_sub'),
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const RangeToolsScreen()),
@@ -148,8 +151,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
           ),
           _ToolTile(
             icon: Icons.book_outlined,
-            title: 'DOPE数据本',
-            subtitle: '归零助手 + 每把枪的归零卡、分组趋势与常用弹药，先选枪再看',
+            title: tr('tool_dope'),
+            subtitle: tr('tools_dope_sub'),
             onTap: () async {
               final gun = await showGunPickerDialog(context);
               if (gun == null || !context.mounted) return;
@@ -188,11 +191,38 @@ class _ToolsScreenState extends State<ToolsScreen> {
           ),
           _ToolTile(
             icon: Icons.attach_money_outlined,
-            title: '复装成本',
-            subtitle: '按你输入的组件价格算每发成本，不提供报价、不给装药建议',
+            title: tr('tools_cost_title'),
+            subtitle: tr('tools_cost_sub'),
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const ReloadCostScreen()),
+            ),
+          ),
+          _ToolTile(
+            icon: Icons.wb_cloudy_outlined,
+            title: tr('weather'),
+            subtitle: tr('weather_sub'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const WeatherScreen()),
+            ),
+          ),
+          _ToolTile(
+            icon: Icons.explore_outlined,
+            title: tr('sensors'),
+            subtitle: tr('sensors_sub'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SensorScreen()),
+            ),
+          ),
+          _ToolTile(
+            icon: Icons.timeline_outlined,
+            title: tr('ballistic_profile'),
+            subtitle: tr('ballistic_sub'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const BallisticProfileScreen()),
             ),
           ),
         ],

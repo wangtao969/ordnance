@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../i18n.dart';
 import '../widgets/app_toast.dart';
 import '../news_data.dart';
 import '../system_actions.dart';
@@ -17,16 +18,16 @@ class NewsScreen extends StatelessWidget {
     final firearms = newsItems.where((n) => n.category == 'firearm').toList();
     final ammo = newsItems.where((n) => n.category == 'ammo').toList();
     return Scaffold(
-      appBar: const SubPageAppBar(title: '枪械资讯'),
+      appBar: SubPageAppBar(title: tr('news_title')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
         children: [
-          _section('枪械厂商', firearms, bronze, grey, context),
+          _section(tr('news_firearms'), firearms, bronze, grey, context),
           const SizedBox(height: 20),
-          _section('弹药商', ammo, bronze, grey, context),
+          _section(tr('news_ammo'), ammo, bronze, grey, context),
           const SizedBox(height: 20),
           Text(
-            '本页为 2026-10-25 整理的公开报道快照，标题与摘要只转述报道要点；点开跳转原文查看完整内容与最新进展，不做实时更新。',
+            tr('news_note'),
             style: TextStyle(color: grey, fontSize: 12),
           ),
         ],
@@ -52,7 +53,7 @@ class NewsScreen extends StatelessWidget {
                 onTap: () async {
                   final ok = await openSystemUrl(n.url);
                   if (!ok && context.mounted) {
-                    showAppToast(context, '未能打开浏览器');
+                    showAppToast(context, tr('browser_open_failed'));
                   }
                 },
                 child: Padding(
@@ -70,7 +71,11 @@ class NewsScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              n.publisher,
+                              // 英文界面：唯一中文厂商名格洛克显示 Glock，其余厂商名本身就是英文。
+                              localeNotifier.value == localeEn &&
+                                      n.publisher == '格洛克'
+                                  ? 'Glock'
+                                  : n.publisher,
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
@@ -89,11 +94,17 @@ class NewsScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text(n.title,
+                      Text(
+                          localeNotifier.value == localeEn
+                              ? n.titleEn
+                              : n.title,
                           style: const TextStyle(
                               fontSize: 15, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
-                      Text(n.summary,
+                      Text(
+                          localeNotifier.value == localeEn
+                              ? n.summaryEn
+                              : n.summary,
                           style: TextStyle(color: grey, fontSize: 13)),
                     ],
                   ),

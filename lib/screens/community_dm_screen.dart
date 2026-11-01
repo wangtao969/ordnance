@@ -29,6 +29,8 @@ class _CommunityDmScreenState extends State<CommunityDmScreen> {
   @override
   void initState() {
     super.initState();
+    // 打开私信列表即清 dm 未读角标（通知中心已删，角标只走这一条路）。
+    communityStore.markDmNotificationsRead();
     _searchFocus.addListener(() {
       if (_searchFocus.hasFocus && !_searchExpanded) {
         setState(() => _searchExpanded = true);
@@ -52,9 +54,9 @@ class _CommunityDmScreenState extends State<CommunityDmScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => GlassDialog(
-        title: '新对话',
+        title: tr('dm_new'),
         content: others.isEmpty
-            ? const Text('还没有其他账号')
+            ? Text(tr('dm_no_accounts'))
             : Column(
                 mainAxisSize: MainAxisSize.min,
                 children: others
@@ -99,7 +101,7 @@ class _CommunityDmScreenState extends State<CommunityDmScreen> {
                         ))
                     .toList(),
               ),
-        actions: [glassPrimaryButton(dialogContext, '关闭')],
+        actions: [glassPrimaryButton(dialogContext, tr('close'))],
       ),
     );
   }
@@ -115,7 +117,7 @@ class _CommunityDmScreenState extends State<CommunityDmScreen> {
       builder: (_, __) {
         if (me == null) {
           return Scaffold(
-            appBar: SubPageAppBar(title: '私信'),
+            appBar: SubPageAppBar(title: tr('author_dm')),
             body: Center(child: Text(tr('login_required_body'))),
           );
         }
@@ -140,7 +142,7 @@ class _CommunityDmScreenState extends State<CommunityDmScreen> {
             .where((a) => a.id != me.id && matches(a))
             .toList();
         return Scaffold(
-          appBar: SubPageAppBar(title: '私信'),
+          appBar: SubPageAppBar(title: tr('author_dm')),
           floatingActionButton: Container(
             width: 56,
             height: 56,
@@ -206,7 +208,7 @@ class _CommunityDmScreenState extends State<CommunityDmScreen> {
                               autofocus: true,
                               onChanged: (v) => setState(() => _query = v),
                               decoration: InputDecoration(
-                                hintText: '搜索会话或用户',
+                                hintText: tr('dm_search_hint'),
                                 prefixIcon:
                                     const Icon(Icons.search, size: 20),
                                 suffixIcon: _query.isEmpty
@@ -262,9 +264,9 @@ class _CommunityDmScreenState extends State<CommunityDmScreen> {
                       ),
                   itemBuilder: (_, index) {
                     if (sessions.isEmpty && index == 0) {
-                      return const Padding(
+                      return Padding(
                         padding: EdgeInsets.all(16),
-                        child: Text('还没有私信会话，点下面的人名开始聊'),
+                        child: Text(tr('dm_empty')),
                       );
                     }
                     final i = sessions.isEmpty ? index - 1 : index;
@@ -342,9 +344,9 @@ class _CommunityDmScreenState extends State<CommunityDmScreen> {
                       );
                     }
                     if (i == sessions.length) {
-                      return const Padding(
+                      return Padding(
                         padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                        child: Text('开始新对话',
+                        child: Text(tr('dm_start_new'),
                             style: TextStyle(fontWeight: FontWeight.bold)),
                       );
                     }
@@ -404,8 +406,8 @@ class _CommunityDmThreadScreenState extends State<CommunityDmThreadScreen> {
       builder: (_, __) {
         if (me == null || peer == null) {
           return Scaffold(
-            appBar: SubPageAppBar(title: '私信'),
-            body: const Center(child: Text('对方账号不存在')),
+            appBar: SubPageAppBar(title: tr('author_dm')),
+            body: Center(child: Text(tr('dm_peer_gone'))),
           );
         }
         final thread = communityStore.dms
@@ -414,7 +416,7 @@ class _CommunityDmThreadScreenState extends State<CommunityDmThreadScreen> {
                 (m.fromId == peer.id && m.toId == me.id))
             .toList();
         return Scaffold(
-          appBar: SubPageAppBar(title: '私信'),
+          appBar: SubPageAppBar(title: tr('author_dm')),
           body: Column(
             children: [
               Padding(
@@ -448,7 +450,7 @@ class _CommunityDmThreadScreenState extends State<CommunityDmThreadScreen> {
               Expanded(
                 child: thread.isEmpty
                     ? Center(
-                        child: Text('还没有消息，打个招呼吧',
+                        child: Text(tr('dm_no_messages'),
                             style: TextStyle(color: grey)))
                     : ListView(
                         padding: const EdgeInsets.all(16),
@@ -497,7 +499,7 @@ class _CommunityDmThreadScreenState extends State<CommunityDmThreadScreen> {
                         child: TextField(
                           controller: _ctrl,
                           decoration: InputDecoration(
-                            hintText: '发私信……',
+                            hintText: tr('dm_input_hint'),
                             filled: true,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(24),

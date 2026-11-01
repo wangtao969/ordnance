@@ -34,7 +34,7 @@ class GunListScreen extends StatelessWidget {
                     style: const TextStyle(
                         fontSize: 20, fontWeight: FontWeight.bold)),
                 Text(
-                    '${categoryDisplay(category)} · ${list.length} 支',
+                    '${categoryDisplay(category)} · ${list.length}' + tr('gun_count_suffix'),
                     style: const TextStyle(color: Colors.grey)),
               ],
             ),

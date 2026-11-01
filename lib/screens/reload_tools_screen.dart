@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../i18n.dart';
 import '../data.dart';
 import '../english_terms.dart';
 import '../models.dart';
@@ -45,7 +46,7 @@ class _ReloadToolsScreenState extends State<ReloadToolsScreen> {
           t.function.toLowerCase().contains(q);
     }).toList();
     return Scaffold(
-      appBar: const SubPageAppBar(title: '复装工具'),
+      appBar: SubPageAppBar(title: tr('reload_tools_title')),
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
@@ -53,7 +54,7 @@ class _ReloadToolsScreenState extends State<ReloadToolsScreen> {
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Text(
-                '新手必备最小套装：单级压床 + 全长整形模组 + 壳座 + 秤（横梁/电子二选一）+ 量粉器 + 漏斗 + 卡尺 + 修壳器 + 倒角工具 + 底火窝清洁器 + 润滑套装 + 装弹托盘 + 底火安装（手持或压床自带）。其余为进阶/可选。价格为 2026 年 10 月美国零售参考价，随时变动，以下单时商家标价为准。',
+                tr('reload_tools_intro'),
                 style: TextStyle(color: grey, fontSize: 12),
               ),
             ),
@@ -61,7 +62,7 @@ class _ReloadToolsScreenState extends State<ReloadToolsScreen> {
           const SizedBox(height: 12),
           TextField(
             decoration: InputDecoration(
-              hintText: '搜索工具 / 品牌 / 类别',
+              hintText: tr('reload_tools_search_hint'),
               prefixIcon: const Icon(Icons.search),
               suffixIcon: _query.isEmpty
                   ? null
@@ -92,7 +93,7 @@ class _ReloadToolsScreenState extends State<ReloadToolsScreen> {
             Padding(
               padding: const EdgeInsets.only(top: 24),
               child: Center(
-                child: Text('没有找到相关工具', style: TextStyle(color: grey)),
+                child: Text(tr('reload_tools_empty'), style: TextStyle(color: grey)),
               ),
             ),
         ],
@@ -126,7 +127,7 @@ class _ReloadToolsScreenState extends State<ReloadToolsScreen> {
                       color: bronze,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text('新手必备',
+                    child: Text(tr('reload_tools_essential'),
                         style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -141,10 +142,10 @@ class _ReloadToolsScreenState extends State<ReloadToolsScreen> {
             const SizedBox(height: 6),
             Row(
               children: [
-                Text('参考价', style: TextStyle(color: grey, fontSize: 12)),
+                Text(tr('reload_tools_price_label'), style: TextStyle(color: grey, fontSize: 12)),
                 const SizedBox(width: 8),
                 Text(
-                  t.price,
+                  t.price == '未确认' ? tr('compare_unconfirmed') : t.price,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: t.price == '未确认' ? grey : bronze,

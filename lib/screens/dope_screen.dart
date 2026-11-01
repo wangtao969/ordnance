@@ -198,6 +198,23 @@ class _DopeScreenState extends State<DopeScreen> {
     final noteCtrl = TextEditingController(text: existing?.note ?? '');
     var date = existing?.date ?? today;
 
+    String _dirLabel(String v) {
+      switch (v) {
+        case '不动':
+          return tr('dope_dir_none');
+        case '向左':
+          return tr('zero_dir_left');
+        case '向右':
+          return tr('zero_dir_right');
+        case '向上':
+          return tr('zero_dir_up');
+        case '向下':
+          return tr('zero_dir_down');
+        default:
+          return v;
+      }
+    }
+
     Widget dirRow(
       String label,
       List<String> options,
@@ -213,7 +230,7 @@ class _DopeScreenState extends State<DopeScreen> {
             Padding(
               padding: const EdgeInsets.only(right: 4),
               child: ChoiceChip(
-                label: Text(o, style: const TextStyle(fontSize: 12)),
+                label: Text(_dirLabel(o), style: const TextStyle(fontSize: 12)),
                 selected: dir == o,
                 onSelected: (_) => onDir(o),
               ),
@@ -223,7 +240,7 @@ class _DopeScreenState extends State<DopeScreen> {
             icon: const Icon(Icons.remove, size: 18),
             onPressed: clicks > 0 ? () => onClicks(clicks - 1) : null,
           ),
-          Text('$clicks 格', style: const TextStyle(fontSize: 13)),
+          Text('$clicks' + tr('dope_clicks_suffix'), style: const TextStyle(fontSize: 13)),
           IconButton(
             icon: const Icon(Icons.add, size: 18),
             onPressed: () => onClicks(clicks + 1),
@@ -236,7 +253,7 @@ class _DopeScreenState extends State<DopeScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => GlassDialog(
-          title: existing == null ? '记一张归零卡' : '改归零卡',
+          title: existing == null ? tr('dope_new_card') : tr('dope_edit_card'),
           subtitle: gunDisplayName(widget.gun),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -245,8 +262,8 @@ class _DopeScreenState extends State<DopeScreen> {
               TextField(
                 controller: distCtrl,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: '归零距离（米）',
+                decoration: InputDecoration(
+                  labelText: tr('dope_zero_dist_label'),
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(12))),
                 ),
@@ -257,7 +274,7 @@ class _DopeScreenState extends State<DopeScreen> {
                 children: [
                   for (final d in [50, 100, 200, 300])
                     ActionChip(
-                      label: Text('$d 米'),
+                      label: Text('$d' + tr('range_unit_m')),
                       onPressed: () =>
                           setDialogState(() => distCtrl.text = '$d'),
                     ),
@@ -266,8 +283,8 @@ class _DopeScreenState extends State<DopeScreen> {
               const SizedBox(height: 12),
               TextField(
                 controller: ammoCtrl,
-                decoration: const InputDecoration(
-                  labelText: '用弹（可选，点下面 chips 快填）',
+                decoration: InputDecoration(
+                  labelText: tr('dope_ammo_label'),
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(12))),
                 ),
@@ -288,25 +305,25 @@ class _DopeScreenState extends State<DopeScreen> {
                 ),
               ],
               const SizedBox(height: 12),
-              const Text('瞄具调节（拧了几格，不动就不用填格数）',
+              Text(tr('dope_clicks_title'),
                   style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
-              dirRow('水平', ['不动', '向左', '向右'], hDir, hClicks,
+              dirRow(tr('dope_dir_h'), ['不动', '向左', '向右'], hDir, hClicks,
                   (v) => setDialogState(() => hDir = v),
                   (v) => setDialogState(() => hClicks = v)),
-              dirRow('垂直', ['不动', '向上', '向下'], vDir, vClicks,
+              dirRow(tr('dope_dir_v'), ['不动', '向上', '向下'], vDir, vClicks,
                   (v) => setDialogState(() => vDir = v),
                   (v) => setDialogState(() => vClicks = v)),
               if (legacyClicks.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
-                  child: Text('原调节记录：$legacyClicks（重新选会覆盖）',
+                  child: Text(tr('dope_legacy_prefix') + legacyClicks + tr('dope_legacy_suffix'),
                       style: const TextStyle(color: Colors.grey, fontSize: 12)),
                 ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Text('日期：$date'),
+                  Text(tr('dope_date_prefix') + date),
                   TextButton(
                     onPressed: () async {
                       final picked = await showDatePicker(
@@ -320,15 +337,15 @@ class _DopeScreenState extends State<DopeScreen> {
                             '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}');
                       }
                     },
-                    child: const Text('改日期'),
+                    child: Text(tr('dope_change_date')),
                   ),
                 ],
               ),
               const SizedBox(height: 4),
               TextField(
                 controller: noteCtrl,
-                decoration: const InputDecoration(
-                  labelText: '备注（可选）',
+                decoration: InputDecoration(
+                  labelText: tr('dope_note_label'),
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(12))),
                 ),
@@ -336,8 +353,8 @@ class _DopeScreenState extends State<DopeScreen> {
             ],
           ),
           actions: [
-            glassCancelButton(ctx, '取消'),
-            glassPrimaryButton(ctx, '保存', popTrue: true),
+            glassCancelButton(ctx, tr('cancel')),
+            glassPrimaryButton(ctx, tr('save'), popTrue: true),
           ],
         ),
       ),
@@ -369,7 +386,7 @@ class _DopeScreenState extends State<DopeScreen> {
         }
       });
       await _saveZeros();
-      showAppToast(context, existing == null ? '归零卡已记下' : '归零卡已修改');
+      showAppToast(context, existing == null ? tr('dope_saved') : tr('dope_updated'));
     }
   }
 
@@ -406,7 +423,7 @@ class _DopeScreenState extends State<DopeScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
-      appBar: SubPageAppBar(title: '${gunDisplayName(gun)} · DOPE数据本'),
+      appBar: SubPageAppBar(title: '${gunDisplayName(gun)} · ' + tr('tool_dope')),
       body: SafeArea(
         top: true,
         bottom: false,
@@ -431,33 +448,33 @@ class _DopeScreenState extends State<DopeScreen> {
             // 归零卡
             Row(
               children: [
-                const Text('归零卡',
+                Text(tr('dope_cards_title'),
                     style:
                         TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                 const Spacer(),
                 TextButton.icon(
                   onPressed: () => _editZero(),
                   icon: const Icon(Icons.add, size: 18),
-                  label: const Text('记一张'),
+                  label: Text(tr('dope_add_card')),
                 ),
               ],
             ),
             const SizedBox(height: 4),
             if (_zeros.isEmpty)
-              Text('还没记过归零卡：归零距离、用弹、瞄具调节记下来，下次换场子不用重摸。',
+              Text(tr('dope_no_cards'),
                   style: TextStyle(color: grey, fontSize: 13))
             else
-              Text('点卡片可修改，垃圾桶是删除。',
+              Text(tr('dope_cards_hint'),
                   style: TextStyle(color: grey, fontSize: 12)),
             for (final z in _zeros)
               Card(
                 margin: const EdgeInsets.only(bottom: 6),
                 child: ListTile(
-                  title: Text('${z.distance} 米归零 · ${z.date}'),
+                  title: Text('${z.distance}' + tr('range_unit_m') + tr('dope_zeroed_suffix') + ' · ${z.date}'),
                   subtitle: Text(
                       [
-                        if (z.ammo.isNotEmpty) '用弹：${z.ammo}',
-                        if (z.clicks.isNotEmpty) '调节：${z.clicks}',
+                        if (z.ammo.isNotEmpty) tr('dope_ammo_prefix') + z.ammo,
+                        if (z.clicks.isNotEmpty) tr('dope_clicks_prefix') + z.clicks,
                         if (z.note.isNotEmpty) z.note,
                       ].join(' · '),
                       style: TextStyle(color: grey, fontSize: 12)),
@@ -473,14 +490,14 @@ class _DopeScreenState extends State<DopeScreen> {
               ),
             const SizedBox(height: 16),
             // 分组趋势：该枪成绩按时间倒序，带 MOA。
-            const Text('分组趋势（该枪成绩）',
+            Text(tr('dope_trend_title'),
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             if (account == null)
-              Text('登录后记的靶场成绩会按枪归集到这里，现在还没有可看的成绩。',
+              Text(tr('dope_trend_login_note'),
                   style: TextStyle(color: grey, fontSize: 13))
             else if (scores.isEmpty)
-              Text('这把枪还没有靶场成绩，去靶场成绩里记一组就会出现在这里。',
+              Text(tr('dope_trend_empty'),
                   style: TextStyle(color: grey, fontSize: 13)),
             if (moaChartScores.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -513,46 +530,46 @@ class _DopeScreenState extends State<DopeScreen> {
                 margin: const EdgeInsets.only(bottom: 6),
                 child: ListTile(
                   title: Text(s.groupSize > 0
-                      ? '分组 ${s.groupSize.toStringAsFixed(1)} 厘米'
+                      ? tr('dope_group_prefix') + '${s.groupSize.toStringAsFixed(1)}' + tr('dope_group_suffix_cm') +
                           '${s.distance > 0 ? '（${(s.groupSize / (s.distance * 0.02909)).toStringAsFixed(2)} MOA）' : ''}'
-                      : '未记分组'),
+                      : tr('dope_no_group')),
                   subtitle: Text(
-                      '${s.date.toString().substring(0, 10)} · ${s.distance} 米 · ${s.shots} 发'
+                      '${s.date.toString().substring(0, 10)} · ${s.distance}' + tr('range_unit_m') + ' · ${s.shots}' + tr('ammo_rounds_suffix') +
                       '${s.ammo.isNotEmpty ? ' · ${s.ammo}' : ''}',
                       style: TextStyle(color: grey, fontSize: 12)),
                 ),
               ),
             const SizedBox(height: 16),
-            const Text('常用弹药',
+            Text(tr('dope_common_ammo'),
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             if (topAmmo.isEmpty)
-              Text('还没有该枪带弹药信息的成绩，记成绩时填弹药就会统计出来。',
+              Text(tr('dope_no_ammo_stats'),
                   style: TextStyle(color: grey, fontSize: 13)),
             for (final e in topAmmo.take(5))
               Card(
                 margin: const EdgeInsets.only(bottom: 6),
                 child: ListTile(
                   title: Text(e.key),
-                  trailing: Text('${e.value} 次',
+                  trailing: Text('${e.value}' + tr('dope_times_suffix'),
                       style: TextStyle(color: grey, fontSize: 13)),
                 ),
               ),
             const SizedBox(height: 16),
-            const Text('收藏与保养',
+            Text(tr('dope_collect_maint'),
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             Text(
                 collection == null
-                    ? '这把枪还没进收藏柜，进收藏柜后这里显示累计发数。'
-                    : '收藏柜：已打 ${collection.rounds} 发',
+                    ? tr('dope_no_collection')
+                    : tr('dope_collection_prefix') + '${collection.rounds}' + tr('ammo_rounds_suffix'),
                 style: TextStyle(color: grey, fontSize: 13)),
             const SizedBox(height: 4),
             Text(
                 _lastMaintenance.isEmpty
-                    ? '暂无保养记录。'
-                    : '上次保养：$_lastMaintenance'
-                        '${_maintenanceDays >= 0 ? '（${_maintenanceDays} 天前）' : ''}',
+                    ? tr('dope_no_maintenance')
+                    : tr('dope_last_maint_prefix') + _lastMaintenance +
+                        '${_maintenanceDays >= 0 ? tr('dope_days_ago_prefix') + '$_maintenanceDays' + tr('dope_days_ago_suffix') : ''}',
                 style: TextStyle(color: grey, fontSize: 13)),
           ],
         ),

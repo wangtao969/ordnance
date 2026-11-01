@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../ballistic_store.dart';
 import '../data.dart';
 import '../english_terms.dart';
 import '../haptics.dart';
@@ -20,22 +21,33 @@ class GunDetailScreen extends StatefulWidget {
 
 class _GunDetailScreenState extends State<GunDetailScreen> {
   final Set<String> _assembled = {};
+  late final Future<List<BallisticProfile>> _profilesFuture;
 
-  static const _hotspots = [
-    ('枪口', '枪口装置安装位置，可装消音器或制退器', 0.08, 0.42),
-    ('瞄具', '导轨上的瞄准装置安装位置', 0.38, 0.18),
-    ('弹匣', '供弹具位置', 0.45, 0.62),
-    ('扳机', '击发机构', 0.55, 0.55),
-    ('枪托', '抵肩部位', 0.88, 0.45),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _profilesFuture = loadBallisticProfiles();
+  }
+
+  static List<(String, String, double, double)> _hotspots() => [
+        (tr('detail_hot_muzzle'), tr('detail_hot_muzzle_desc'), 0.08, 0.42),
+        (tr('detail_hot_sight'), tr('detail_hot_sight_desc'), 0.38, 0.18),
+        (tr('detail_hot_mag'), tr('detail_hot_mag_desc'), 0.45, 0.62),
+        (tr('detail_hot_trigger'), tr('detail_hot_trigger_desc'), 0.55, 0.55),
+        (tr('detail_hot_stock'), tr('detail_hot_stock_desc'), 0.88, 0.45),
+      ];
 
   @override
   Widget build(BuildContext context) {
     final gun = widget.gun;
     // 图区三层：实物照片 > 族系识别图 > 参数化轮廓。
     final diagramKey = familyDiagramOf(gun);
-    final diagramInfo =
-        diagramKey == null ? null : familyDiagramInfo[diagramKey];
+    // 英文界面显示英文版族系名与识别要点（与中文表同 key）。
+    final diagramInfo = diagramKey == null
+        ? null
+        : (localeNotifier.value == localeEn
+            ? familyDiagramInfoEn[diagramKey]
+            : familyDiagramInfo[diagramKey]);
     return Scaffold(
       appBar: SubPageAppBar(title: gunDisplayName(gun)),
       body: ListView(
@@ -75,7 +87,7 @@ class _GunDetailScreenState extends State<GunDetailScreen> {
                                         0.44,
                               ),
                 ),
-                for (final h in _hotspots)
+                for (final h in _hotspots())
                   Positioned(
                     left: MediaQuery.of(context).size.width * h.$3 - 14,
                     top: 220 * h.$4 - 14,
@@ -114,7 +126,7 @@ class _GunDetailScreenState extends State<GunDetailScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('族系识别图 · ${diagramInfo.$1}：图中为该族系的标志性特征，非本枪实物。',
+                  Text(tr('detail_family_prefix') + diagramInfo.$1 + tr('detail_family_suffix'),
                       style:
                           const TextStyle(color: Colors.grey, fontSize: 12)),
                   for (final p in diagramInfo.$2)
@@ -124,8 +136,8 @@ class _GunDetailScreenState extends State<GunDetailScreen> {
                 ],
               )
             else
-              const Text(
-                  '注：本枪暂无实物照片，当前为按全长与枪管长比例生成的示意轮廓，非实物。',
+              Text(
+                  tr('detail_no_photo_note'),
                   style: TextStyle(color: Colors.grey, fontSize: 12)),
           if (_assembled.isNotEmpty)
             Padding(
@@ -151,7 +163,7 @@ class _GunDetailScreenState extends State<GunDetailScreen> {
           if (gun.price != null)
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text('大约价格：${gun.price}（美国零售参考价）',
+              child: Text(tr('detail_price_prefix') + '${gun.price}' + tr('detail_price_suffix'),
                   style: const TextStyle(color: Colors.grey, fontSize: 14)),
             ),
           const SizedBox(height: 12),
@@ -165,6 +177,83 @@ class _GunDetailScreenState extends State<GunDetailScreen> {
           _spec('Capacity', gun.capacity),
           _spec('Origin', originDisplay(gun.origin)),
           _spec('Year', gun.year),
+          if (gun.caliberOptions.isNotEmpty)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 12),
+                Text(tr('caliber_options'),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                for (final o in gun.caliberOptions)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                            width: 150,
+                            child: Text(o.caliber,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold))),
+                        Expanded(
+                            child: Text(
+                                o.barrel.isEmpty
+                                    ? tr('barrel_not_confirmed')
+                                    : o.barrel,
+                                style: o.barrel.isEmpty
+                                    ? const TextStyle(color: Colors.grey)
+                                    : null)),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          FutureBuilder<List<BallisticProfile>>(
+            future: _profilesFuture,
+            builder: (_, snap) {
+              if (!snap.hasData) return const SizedBox.shrink();
+              BallisticProfile? bound;
+              for (final p in snap.data!) {
+                if (p.gunName == gun.name) {
+                  bound = p;
+                  break;
+                }
+              }
+              if (bound == null) return const SizedBox.shrink();
+              final b = bound;
+              final rows = <(String, String)>[];
+              if (b.dragModel.isNotEmpty) {
+                rows.add((tr('ballistic_drag_model'), b.dragModel));
+              }
+              if (b.bc.isNotEmpty) rows.add((tr('ballistic_bc'), b.bc));
+              if (b.muzzleVelocityFps.isNotEmpty) {
+                rows.add(
+                    (tr('ballistic_mv'), '${b.muzzleVelocityFps} fps'));
+              }
+              if (b.zeroDistanceY.isNotEmpty) {
+                rows.add((tr('ballistic_zero'), '${b.zeroDistanceY} y'));
+              }
+              if (b.twistIn.isNotEmpty) {
+                rows.add((tr('ballistic_twist'),
+                    '${b.twistIn}″${b.twistDirection.isEmpty ? '' : ' ${b.twistDirection}'}'));
+              }
+              if (b.sg.isNotEmpty) rows.add((tr('ballistic_sg'), b.sg));
+              if (rows.isEmpty) return const SizedBox.shrink();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 12),
+                  Text(tr('ballistic_summary'),
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  for (final r in rows) _spec(r.$1, r.$2),
+                ],
+              );
+            },
+          ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: () => Navigator.push(
@@ -174,7 +263,7 @@ class _GunDetailScreenState extends State<GunDetailScreen> {
               ),
             ),
             icon: const Icon(Icons.compare_arrows, size: 18),
-            label: const Text('和另一把对比'),
+            label: Text(tr('detail_compare')),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
@@ -185,13 +274,17 @@ class _GunDetailScreenState extends State<GunDetailScreen> {
               ),
             ),
             icon: const Icon(Icons.book_outlined, size: 18),
-            label: const Text('DOPE数据本'),
+            label: Text(tr('tool_dope')),
           ),
           const SizedBox(height: 12),
           Text(tr('intro'),
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text(gun.description),
+          // 英文界面显示英文简介（空时回落中文简介）。
+          Text(localeNotifier.value == localeEn &&
+                  gun.descriptionEn.isNotEmpty
+              ? gun.descriptionEn
+              : gun.description),
           const SizedBox(height: 12),
           Text(tr('ammo_fit'),
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -234,7 +327,7 @@ class _GunDetailScreenState extends State<GunDetailScreen> {
                           ],
                         ),
                       )),
-                  const Text('美国零售参考价，随商家与批次浮动，以下单时标价为准。',
+                  Text(tr('detail_price_note'),
                       style: TextStyle(color: Colors.grey, fontSize: 12)),
                 ],
               );

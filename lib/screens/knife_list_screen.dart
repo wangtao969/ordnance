@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../i18n.dart';
 import '../english_terms.dart';
 import '../haptics.dart';
 import '../knife_data.dart';
@@ -39,14 +40,14 @@ class _KnifeListScreenState extends State<KnifeListScreen> {
           knifeTypeDisplay(k.type).toLowerCase().contains(q);
     }).toList();
     return Scaffold(
-      appBar: const SubPageAppBar(title: '刀具图鉴'),
+      appBar: SubPageAppBar(title: tr('knife_title')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 110),
         children: [
           TextField(
             // 聚焦边与未聚焦同一支：不写 focusedBorder 会回落全局橙色边。
             decoration: InputDecoration(
-              hintText: '搜索刀具、国家或分类',
+              hintText: tr('knife_search_hint'),
               prefixIcon: const Icon(Icons.search),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -68,7 +69,7 @@ class _KnifeListScreenState extends State<KnifeListScreen> {
             children: ['全部', ...knifeTypes].map((t) {
               final selected = _type == t;
               return ChoiceChip(
-                label: Text(t == '全部' ? t : knifeTypeDisplay(t)),
+                label: Text(t == '全部' ? tr('all') : knifeTypeDisplay(t)),
                 selected: selected,
                 selectedColor: bronze,
                 labelStyle: TextStyle(
@@ -86,7 +87,7 @@ class _KnifeListScreenState extends State<KnifeListScreen> {
             children: ['全部', ...knifeCountries].map((c) {
               final selected = _country == c;
               return ChoiceChip(
-                label: Text(c == '全部' ? c : countryDisplay(c)),
+                label: Text(c == '全部' ? tr('all') : countryDisplay(c)),
                 selected: selected,
                 selectedColor: bronze,
                 labelStyle: TextStyle(
@@ -98,14 +99,14 @@ class _KnifeListScreenState extends State<KnifeListScreen> {
             }).toList(),
           ),
           const SizedBox(height: 12),
-          Text('共 ${filtered.length} 把 · 示意图为刀形剪影，非实物照片',
+          Text(tr('knife_count_prefix') + '${filtered.length}' + tr('knife_count_suffix'),
               style: TextStyle(color: grey, fontSize: 12)),
           const SizedBox(height: 12),
           ...filtered.map((k) => _knifeRow(context, k, cardBg, grey, ink)),
           if (filtered.isEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 24),
-              child: Center(child: Text('没有找到相关刀具', style: TextStyle(color: grey))),
+              child: Center(child: Text(tr('knife_empty'), style: TextStyle(color: grey))),
             ),
         ],
       ),

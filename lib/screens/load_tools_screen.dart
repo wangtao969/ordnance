@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../i18n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../tools_units.dart';
@@ -193,122 +194,122 @@ class _LoadToolsScreenState extends State<LoadToolsScreen> {
     return ValueListenableBuilder<String>(
       valueListenable: unitSystemNotifier,
       builder: (_, __, ___) => Scaffold(
-      appBar: SubPageAppBar(title: '装药工具'),
+      appBar: SubPageAppBar(title: tr('load_title')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
 
-          const Text('只做物理换算，不给装药建议；装药请以手册原文为准。',
+          Text(tr('load_note'),
               style: TextStyle(color: Colors.grey, fontSize: 12)),
           if (widget.initialLabel != null) ...[
             const SizedBox(height: 12),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: Text('已从 ${widget.initialLabel} 带入弹头、初速与装药，可直接改。',
+                child: Text(tr('load_carried_prefix') + (widget.initialLabel ?? '') + tr('load_carried_suffix'),
                     style: const TextStyle(fontSize: 13)),
               ),
             ),
           ],
           const SizedBox(height: 16),
-          const Text('单位换算',
+          Text(tr('load_unit_title'),
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           _NumberField(
             controller: _grainsCtrl,
-            label: '格令（gr）',
+            label: tr('load_gr_label'),
             onChanged: (_) { setState(() {}); _save(); },
           ),
           if (grains > 0)
-            _ResultLine('= ${_fmt(grains * _grToG, 3)} 克'),
+            _ResultLine(tr('load_result_eq') + '${_fmt(grains * _grToG, 3)}' + tr('load_unit_g')),
           const SizedBox(height: 8),
           _NumberField(
             controller: _fpsCtrl,
-            label: '初速（英尺/秒 fps）',
+            label: tr('load_fps_label'),
             onChanged: (_) { setState(() {}); _save(); },
           ),
           if (fps > 0)
-            _ResultLine('= ${_fmt(fps * _fpsToMs, 2)} 米/秒'),
+            _ResultLine(tr('load_result_eq') + '${_fmt(fps * _fpsToMs, 2)}' + tr('load_unit_ms')),
           const SizedBox(height: 8),
           _NumberField(
             controller: _inchCtrl,
-            label: '长度（英寸）',
+            label: tr('load_in_label'),
             onChanged: (_) { setState(() {}); _save(); },
           ),
           if (inch > 0)
-            _ResultLine('= ${_fmt(inch * 2.54, 2)} 厘米'),
+            _ResultLine(tr('load_result_eq') + '${_fmt(inch * 2.54, 2)}' + tr('load_unit_cm')),
           const SizedBox(height: 8),
           _NumberField(
             controller: _mmCtrl,
-            label: '弹头直径（毫米）',
+            label: tr('load_dia_label'),
             onChanged: (_) { setState(() {}); _save(); },
           ),
           if (mm > 0)
-            _ResultLine('= ${_fmt(mm / 25.4, 3)} 英寸'),
+            _ResultLine(tr('load_result_eq') + '${_fmt(mm / 25.4, 3)}' + tr('load_unit_in')),
           const SizedBox(height: 8),
           _NumberField(
             controller: _psiCtrl,
-            label: '膛压（psi）',
+            label: tr('load_psi_label'),
             onChanged: (_) { setState(() {}); _save(); },
           ),
           if (psi > 0)
-            _ResultLine('= ${_fmt(psi * 0.00689476, 2)} 兆帕（MPa）'),
+            _ResultLine(tr('load_result_eq') + '${_fmt(psi * 0.00689476, 2)}' + tr('load_unit_mpa')),
           const SizedBox(height: 8),
           _NumberField(
             controller: _yardCtrl,
-            label: '距离（码）',
+            label: tr('load_yd_label'),
             onChanged: (_) { setState(() {}); _save(); },
           ),
           if (yard > 0)
-            _ResultLine('= ${_fmt(yard * 0.9144, 2)} 米'),
+            _ResultLine(tr('load_result_eq') + '${_fmt(yard * 0.9144, 2)}' + tr('load_unit_m')),
           const SizedBox(height: 20),
-          const Text('枪口动能',
+          Text(tr('load_energy_title'),
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           _NumberField(
             controller: _bulletCtrl,
-            label: metric ? '弹头重（克）' : '弹头重（格令）',
+            label: metric ? tr('load_bullet_g') : tr('load_bullet_gr'),
             onChanged: (_) { setState(() {}); _save(); },
           ),
           const SizedBox(height: 8),
           _NumberField(
             controller: _velocityCtrl,
-            label: metric ? '初速（米/秒）' : '初速（英尺/秒）',
+            label: metric ? tr('load_mv_ms') : tr('load_mv_fps'),
             onChanged: (_) { setState(() {}); _save(); },
           ),
           const SizedBox(height: 8),
           if (bulletGr > 0 && velocityFps > 0)
             _ResultLine(
-                '枪口动能：${_fmt(energyJ, 1)} 焦耳（${_fmt(energyFtLb, 1)} 英尺·磅）')
+                tr('load_energy_prefix') + '${_fmt(energyJ, 1)}' + tr('load_energy_mid') + '${_fmt(energyFtLb, 1)}' + tr('load_energy_suffix'))
           else
-            const Text('填入弹头重与初速后出结果',
+            Text(tr('load_energy_empty'),
                 style: TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 20),
-          const Text('后坐力（自由后坐能量）',
+          Text(tr('load_recoil_title'),
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           _NumberField(
             controller: _powderCtrl,
-            label: metric ? '装药量（克）' : '装药量（格令）',
+            label: metric ? tr('load_charge_g') : tr('load_charge_gr'),
             onChanged: (_) { setState(() {}); _save(); },
           ),
           const SizedBox(height: 8),
           _NumberField(
             controller: _gunWeightCtrl,
-            label: metric ? '枪重（千克）' : '枪重（磅）',
+            label: metric ? tr('load_gun_kg') : tr('load_gun_lb'),
             onChanged: (_) { setState(() {}); _save(); },
           ),
           const SizedBox(height: 8),
           if (gunKg > 0 && velocityFps > 0)
             _ResultLine(
-                '后坐能量：${_fmt(recoilJ, 1)} 焦耳（${_fmt(recoilFtLb, 1)} 英尺·磅），后坐速度 ${_fmt(recoilV, 2)} 米/秒')
+                tr('load_recoil_prefix') + '${_fmt(recoilJ, 1)}' + tr('load_recoil_mid_a') + '${_fmt(recoilFtLb, 1)}' + tr('load_recoil_mid_b') + '${_fmt(recoilV, 2)}' + tr('load_recoil_suffix'))
           else
-            const Text('填入初速与枪重后出结果',
+            Text(tr('load_recoil_empty'),
                 style: TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 8),
-          const Text('火药燃气速度按 1.75 倍初速估算，结果为参考值。',
+          Text(tr('load_gas_note'),
               style: TextStyle(color: Colors.grey, fontSize: 12)),
-          Text('动能与后坐力的输入单位跟随工具页单位制（当前：${metric ? '公制' : '英制'}）。',
+          Text(tr('load_unit_footer_prefix') + (metric ? tr('tools_unit_metric') : tr('tools_unit_imperial')) + tr('load_unit_footer_suffix'),
               style: TextStyle(color: Colors.grey, fontSize: 12)),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../i18n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../widgets/app_top_bar.dart';
@@ -186,100 +187,100 @@ class _ReloadCostScreenState extends State<ReloadCostScreen> {
     }
 
     return Scaffold(
-      appBar: const SubPageAppBar(title: '复装成本'),
+      appBar: SubPageAppBar(title: tr('cost_title')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('只算你输入的价格，不提供厂商报价、不给装药建议；装药以手册原文为准。',
+          Text(tr('cost_note'),
               style: TextStyle(color: Colors.grey, fontSize: 12)),
           if (widget.initialLabel != null) ...[
             const SizedBox(height: 12),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: Text('已从 ${widget.initialLabel} 带入装药量与批次数，价格用你填过的。',
+                child: Text(tr('cost_carried_prefix') + (widget.initialLabel ?? '') + tr('cost_carried_suffix'),
                     style: const TextStyle(fontSize: 13)),
               ),
             ),
           ],
           const SizedBox(height: 16),
-          const Text('弹头',
+          Text(tr('cost_bullet'),
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          pair(_bulletBoxCtrl, _bulletCountCtrl, '整盒价', '盒内数（颗）'),
+          pair(_bulletBoxCtrl, _bulletCountCtrl, tr('cost_box_price'), tr('cost_box_count')),
           if (num(_bulletCountCtrl) > 0)
-            Text('弹头单价：${_fmt(bullet)}',
+            Text(tr('cost_bullet_unit_prefix') + '${_fmt(bullet)}',
                 style: const TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 12),
-          const Text('底火',
+          Text(tr('cost_primer'),
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          pair(_primerBoxCtrl, _primerCountCtrl, '整盒价', '盒内数（颗）'),
+          pair(_primerBoxCtrl, _primerCountCtrl, tr('cost_box_price'), tr('cost_box_count')),
           if (num(_primerCountCtrl) > 0)
-            Text('底火单价：${_fmt(primer)}',
+            Text(tr('cost_primer_unit_prefix') + '${_fmt(primer)}',
                 style: const TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 12),
-          const Text('火药',
+          Text(tr('cost_powder'),
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          pair(_powderCanCtrl, _powderCanGCtrl, '整罐价', '罐重（克）'),
-          const Text('1 磅 = 453.6 克；8 磅桶 = 3628.8 克。',
+          pair(_powderCanCtrl, _powderCanGCtrl, tr('cost_can_price'), tr('cost_can_weight')),
+          Text(tr('cost_lb_note'),
               style: TextStyle(color: Colors.grey, fontSize: 12)),
           if (num(_powderCanGCtrl) > 0)
-            Text('火药每克：${_fmt(powderPricePerG)}',
+            Text(tr('cost_powder_per_g_prefix') + '${_fmt(powderPricePerG)}',
                 style: const TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 8),
           _NumberField(
               controller: _powderGrCtrl,
-              label: '装药量（格令，仅用来算火药钱）',
+              label: tr('cost_charge_label'),
               onChanged: (_) { setState(() {}); _save(); }),
           const SizedBox(height: 12),
-          const Text('弹壳',
+          Text(tr('cost_brass'),
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           _NumberField(
               controller: _brassCtrl,
-              label: '弹壳单价',
+              label: tr('cost_brass_unit'),
               onChanged: (_) { setState(() {}); _save(); }),
           const SizedBox(height: 8),
           _NumberField(
               controller: _reuseCtrl,
-              label: '弹壳复用次数（填 1 表示一次性）',
+              label: tr('cost_brass_reuse'),
               onChanged: (_) { setState(() {}); _save(); }),
           const SizedBox(height: 12),
-          const Text('这批与对比',
+          Text(tr('cost_batch_compare'),
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           _NumberField(
               controller: _roundsCtrl,
-              label: '批次数（发，算这批总成本）',
+              label: tr('cost_batch_count'),
               onChanged: (_) { setState(() {}); _save(); }),
           const SizedBox(height: 8),
           _NumberField(
               controller: _factoryCtrl,
-              label: '厂弹单价（自己填的对比价，不是报价）',
+              label: tr('cost_factory_unit'),
               onChanged: (_) { setState(() {}); _save(); }),
           const SizedBox(height: 16),
-          _ResultLine('每发成本：${_fmt(perRound)}'),
+          _ResultLine(tr('cost_per_round_prefix') + '${_fmt(perRound)}'),
           const SizedBox(height: 4),
-          Text('其中：弹头 ${_fmt(bullet)} + 底火 ${_fmt(primer)} + 火药 ${_fmt(powderCost)} + 弹壳摊销 ${_fmt(brassCost)}',
+          Text(tr('cost_breakdown_a') + '${_fmt(bullet)}' + tr('cost_breakdown_b') + '${_fmt(primer)}' + tr('cost_breakdown_c') + '${_fmt(powderCost)}' + tr('cost_breakdown_d') + '${_fmt(brassCost)}',
               style: const TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 12),
-          _ResultLine('50 发：${_fmt(perRound * 50)}'),
-          _ResultLine('100 发：${_fmt(perRound * 100)}'),
-          _ResultLine('1000 发：${_fmt(perRound * 1000)}'),
+          _ResultLine('50' + tr('cost_per_n_suffix') + '${_fmt(perRound * 50)}'),
+          _ResultLine('100' + tr('cost_per_n_suffix') + '${_fmt(perRound * 100)}'),
+          _ResultLine('1000' + tr('cost_per_n_suffix') + '${_fmt(perRound * 1000)}'),
           if (rounds > 0) ...[
             const SizedBox(height: 8),
-            _ResultLine('这批 ${_fmt(rounds, 0)} 发总成本：${_fmt(batchTotal)}'),
+            _ResultLine(tr('cost_batch_total_prefix') + '${_fmt(rounds, 0)}' + tr('cost_batch_total_mid') + '${_fmt(batchTotal)}'),
           ],
           if (factory > 0 && perRound > 0) ...[
             const SizedBox(height: 8),
             _ResultLine(saving >= 0
-                ? '比厂弹每发省 ${_fmt(saving)}（省 ${_fmt(savingPct, 1)}%）'
-                : '比厂弹每发贵 ${_fmt(-saving)}'),
+                ? tr('cost_save_prefix') + '${_fmt(saving)}' + tr('cost_save_mid') + '${_fmt(savingPct, 1)}' + tr('cost_save_suffix')
+                : tr('cost_dearer_prefix') + '${_fmt(-saving)}'),
           ],
           const SizedBox(height: 8),
-          const Text('货币单位跟你输入的价格一致；换一批组件价格，改总价重算即可。',
+          Text(tr('cost_footer'),
               style: TextStyle(color: Colors.grey, fontSize: 12)),
         ],
       ),

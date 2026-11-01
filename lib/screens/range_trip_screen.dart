@@ -7,6 +7,7 @@ import '../app_log.dart';
 import '../community_store.dart';
 import '../i18n.dart';
 import '../range_trip_data.dart';
+import '../system_actions.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/app_top_bar.dart';
 import 'gun_picker_dialog.dart';
@@ -14,6 +15,9 @@ import 'gun_picker_dialog.dart';
 /// 靶场行程：一次出行的容器，只包起枪、弹药备注与关联成绩。
 /// 经 gunsmap/prefs 存本机（key range_trips_v1），不产生经验、
 /// 不喂勋章、不重复计分；成绩仍以靶场成绩页为准，行程只引用。
+/// 2.2.5 备忘清单：详情页可勾选/删除/自加，列表项显示“备忘 n/m”；
+/// 提醒走系统日历 intent 与系统闹钟 intent，App 不自建通知通道：
+/// 删除行程不谎称同步取消系统事件（日历旧事件由用户自己在日历里管）。
 String _dateText(int ms) {
   final d = DateTime.fromMillisecondsSinceEpoch(ms);
   return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
@@ -84,6 +88,32 @@ class _RangeTripScreenState extends State<RangeTripScreen> {
     }
   }
 
+  Future<void> _confirmDelete(RangeTrip t) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(tr('trip_delete_confirm')),
+        content: t.calendarAdded
+            ? Text(tr('trip_delete_calendar_note'))
+            : null,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(tr('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(tr('trip_delete')),
+          ),
+        ],
+      ),
+    );
+    if (ok == true && mounted) {
+      setState(() => _trips.remove(t));
+      _save();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<String>(
@@ -111,18 +141,21 @@ class _RangeTripScreenState extends State<RangeTripScreen> {
                       title: Text(
                           '${_dateText(t.dateMs)}${t.place.isNotEmpty ? ' · ${t.place}' : ''}'),
                       subtitle: Text(
-                          '${tr('trip_guns')} ${t.gunNames.length} · ${tr('trip_scores')} ${t.scoreIds.length}'),
+                          '${tr('trip_guns')} ${t.gunNames.length} · ${tr('trip_scores')} ${t.scoreIds.length} · ${tr('trip_memo_progress')} ${t.memoDone}/${t.memoItems.length}'),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete_outline),
-                        onPressed: () {
-                          setState(() => _trips.remove(t));
-                          _save();
-                        },
+                        onPressed: () => _confirmDelete(t),
                       ),
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => RangeTripDetailScreen(trip: t)),
+                            builder: (_) => RangeTripDetailScreen(
+                                  trip: t,
+                                  onChanged: () {
+                                    _save();
+                                    if (mounted) setState(() {});
+                                  },
+                                )),
                       ),
                     ),
                   )),
@@ -134,13 +167,112 @@ class _RangeTripScreenState extends State<RangeTripScreen> {
 }
 
 /// 行程详情：行程信息 + 被关联的成绩（按 id 从当前靶场成绩里找，
-/// 已删除的成绩只计条数、不显示）。
-class RangeTripDetailScreen extends StatelessWidget {
+/// 已删除的成绩只计条数、不显示）+ 备忘清单 + 系统日历/闹钟入口。
+/// 备忘改动直接改 trip 对象（与列表页同一实例），再经 onChanged 回写。
+class RangeTripDetailScreen extends StatefulWidget {
   final RangeTrip trip;
-  const RangeTripDetailScreen({super.key, required this.trip});
+  final VoidCallback onChanged;
+  const RangeTripDetailScreen(
+      {super.key, required this.trip, required this.onChanged});
+
+  @override
+  State<RangeTripDetailScreen> createState() =>
+      _RangeTripDetailScreenState();
+}
+
+class _RangeTripDetailScreenState extends State<RangeTripDetailScreen> {
+  final _memoCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _memoCtrl.dispose();
+    super.dispose();
+  }
+
+  String _memoLabel(MemoItem m) =>
+      m.preset.isNotEmpty ? tr('memo_preset_${m.preset}') : m.text;
+
+  void _addCustomMemo() {
+    final text = _memoCtrl.text.trim();
+    if (text.isEmpty) return;
+    setState(() {
+      widget.trip.memoItems.add(MemoItem(text: text));
+      _memoCtrl.clear();
+    });
+    widget.onChanged();
+  }
+
+  /// 加入系统日历：全天事件（当天 00:00 至次日 00:00），标题=地点
+  /// 或“靶场行程”，描述带枪/弹药与备忘进度；跳到用户自己的日历 App
+  /// 里由用户确认。成功只记 calendarAdded 标记；无日历 App 接 intent
+  /// 时给可读提示。App 不追踪日历事件 ID。
+  Future<void> _addCalendar() async {
+    final t = widget.trip;
+    final d = DateTime.fromMillisecondsSinceEpoch(t.dateMs);
+    final begin = DateTime(d.year, d.month, d.day);
+    final end = begin.add(const Duration(days: 1));
+    final title = t.place.isNotEmpty ? t.place : tr('trip_title');
+    final desc = [
+      if (t.gunNames.isNotEmpty)
+        '${tr('trip_guns')} ${t.gunNames.join(tr('trip_list_sep'))}',
+      if (t.ammoNote.isNotEmpty) '${tr('trip_ammo')} ${t.ammoNote}',
+      '${tr('trip_memo_progress')} ${t.memoDone}/${t.memoItems.length}',
+    ].join('\n');
+    final ok = await addCalendarEvent(
+      title: title,
+      beginMs: begin.millisecondsSinceEpoch,
+      endMs: end.millisecondsSinceEpoch,
+      description: desc,
+    );
+    if (!mounted) return;
+    if (ok) {
+      setState(() => t.calendarAdded = true);
+      widget.onChanged();
+      showAppToast(context, tr('chrono_saved'));
+    } else {
+      showAppToast(context, tr('trip_calendar_failed'));
+    }
+  }
+
+  /// 设闹钟提醒：先弹时间选择器（默认行程前一天 20:00，已设过则预填
+  /// 上次时间），再跳系统时钟 App 预填时间与文案（行程名 + 未带数）
+  /// 由用户确认；无时钟 App 接 intent 时给可读提示。
+  Future<void> _setAlarm() async {
+    final t = widget.trip;
+    final base = t.alarmMs > 0
+        ? DateTime.fromMillisecondsSinceEpoch(t.alarmMs)
+        : DateTime.fromMillisecondsSinceEpoch(
+            RangeTrip.defaultReminderMs(t.dateMs));
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: base.hour, minute: base.minute),
+    );
+    if (picked == null || !mounted) return;
+    final d = DateTime.fromMillisecondsSinceEpoch(t.dateMs);
+    final alarmDay =
+        DateTime(d.year, d.month, d.day).subtract(const Duration(days: 1));
+    final alarmMs = DateTime(alarmDay.year, alarmDay.month, alarmDay.day,
+            picked.hour, picked.minute)
+        .millisecondsSinceEpoch;
+    final unpacked = t.memoItems.where((m) => !m.done).length;
+    final title = t.place.isNotEmpty ? t.place : tr('trip_title');
+    final message =
+        '$title · ${tr('trip_alarm_unpacked_prefix')}$unpacked${tr('trip_alarm_unpacked_suffix')}';
+    final ok = await setAlarmClock(
+        hour: picked.hour, minute: picked.minute, message: message);
+    if (!mounted) return;
+    if (ok) {
+      setState(() => t.alarmMs = alarmMs);
+      widget.onChanged();
+      showAppToast(context, tr('chrono_saved'));
+    } else {
+      showAppToast(context, tr('trip_alarm_failed'));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final trip = widget.trip;
     final scores = communityStore.current?.rangeScores ?? [];
     final byId = <String, RangeScore>{};
     for (final s in scores) {
@@ -172,11 +304,12 @@ class RangeTripDetailScreen extends StatelessWidget {
             ],
             if (trip.gunNames.isNotEmpty) ...[
               const SizedBox(height: 8),
-              Text('${tr('trip_guns')}：${trip.gunNames.join('、')}'),
+              Text(
+                  '${tr('trip_guns')} ${trip.gunNames.join(tr('trip_list_sep'))}'),
             ],
             if (trip.ammoNote.isNotEmpty) ...[
               const SizedBox(height: 4),
-              Text('${tr('trip_ammo')}：${trip.ammoNote}'),
+              Text('${tr('trip_ammo')} ${trip.ammoNote}'),
             ],
             if (trip.note.isNotEmpty) ...[
               const SizedBox(height: 4),
@@ -194,15 +327,71 @@ class RangeTripDetailScreen extends StatelessWidget {
             else ...[
               ...linked.map((s) => Card(
                     child: ListTile(
-                      title: Text('${s.gunName} · ${s.distance} 米'),
+                      title: Text(
+                          '${s.gunName} · ${s.distance} ${tr('trip_meter')}'),
                       subtitle: Text(
-                          '${s.shots} 发 · 分组 ${s.groupSize.toStringAsFixed(1)} 厘米${s.score.isNotEmpty ? ' · ${s.score}' : ''}'),
+                          '${s.shots} ${tr('trip_shots_unit')} · ${tr('trip_group_label')} ${s.groupSize.toStringAsFixed(1)} ${tr('trip_cm')}${s.score.isNotEmpty ? ' · ${s.score}' : ''}'),
                     ),
                   )),
               if (missing > 0)
                 Text('$missing ${tr('trip_scores_missing')}',
                     style: const TextStyle(color: Colors.grey, fontSize: 12)),
             ],
+            const SizedBox(height: 16),
+            Text(
+                '${tr('trip_memo')} ${tr('trip_memo_progress')} ${trip.memoDone}/${trip.memoItems.length}',
+                style:
+                    const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            ...trip.memoItems.map((m) => CheckboxListTile(
+                  dense: true,
+                  title: Text(_memoLabel(m)),
+                  value: m.done,
+                  secondary: IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 20),
+                    onPressed: () {
+                      setState(() => trip.memoItems.remove(m));
+                      widget.onChanged();
+                    },
+                  ),
+                  onChanged: (v) {
+                    setState(() => m.done = v == true);
+                    widget.onChanged();
+                  },
+                )),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _memoCtrl,
+                    onSubmitted: (_) => _addCustomMemo(),
+                    decoration: InputDecoration(
+                      hintText: tr('trip_memo_add_hint'),
+                      isDense: true,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton(
+                  onPressed: _addCustomMemo,
+                  child: Text(tr('trip_memo_add')),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: _addCalendar,
+              icon: const Icon(Icons.calendar_month_outlined, size: 18),
+              label: Text(trip.calendarAdded
+                  ? tr('trip_calendar_added')
+                  : tr('trip_add_calendar')),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _setAlarm,
+              icon: const Icon(Icons.alarm_outlined, size: 18),
+              label: Text(tr('trip_set_alarm')),
+            ),
           ],
         ),
       ),
@@ -292,16 +481,14 @@ class _RangeTripAddPageState extends State<RangeTripAddPage> {
             InkWell(
               onTap: _pickDate,
               child: InputDecorator(
-                decoration:
-                    InputDecoration(labelText: tr('trip_date')),
+                decoration: InputDecoration(labelText: tr('trip_date')),
                 child: Text(_date),
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _placeCtrl,
-              decoration:
-                  InputDecoration(labelText: tr('trip_place')),
+              decoration: InputDecoration(labelText: tr('trip_place')),
             ),
             const SizedBox(height: 12),
             Text(tr('trip_guns'),
@@ -323,8 +510,7 @@ class _RangeTripAddPageState extends State<RangeTripAddPage> {
             const SizedBox(height: 12),
             TextField(
               controller: _ammoCtrl,
-              decoration:
-                  InputDecoration(labelText: tr('trip_ammo')),
+              decoration: InputDecoration(labelText: tr('trip_ammo')),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -342,9 +528,10 @@ class _RangeTripAddPageState extends State<RangeTripAddPage> {
             else
               ...scores.map((s) => CheckboxListTile(
                     dense: true,
-                    title: Text('${s.gunName} · ${s.distance} 米'),
+                    title: Text(
+                        '${s.gunName} · ${s.distance} ${tr('trip_meter')}'),
                     subtitle: Text(
-                        '${s.shots} 发 · 分组 ${s.groupSize.toStringAsFixed(1)} 厘米'),
+                        '${s.shots} ${tr('trip_shots_unit')} · ${tr('trip_group_label')} ${s.groupSize.toStringAsFixed(1)} ${tr('trip_cm')}'),
                     value: _scoreIds.contains(s.id),
                     onChanged: (v) {
                       setState(() {

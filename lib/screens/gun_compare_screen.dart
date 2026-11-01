@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../i18n.dart';
 import '../data.dart';
 import '../english_terms.dart';
 import '../models.dart';
@@ -48,7 +49,7 @@ class _GunCompareScreenState extends State<GunCompareScreen> {
         return 'Bullet ${c.bulletDiameter} · Case ${c.caseLength}';
       }
     }
-    return '未收录';
+    return tr('compare_missing');
   }
 
   String _join(List<String> items) =>
@@ -75,19 +76,19 @@ class _GunCompareScreenState extends State<GunCompareScreen> {
       add('Compatible Accessories',
           _a!.accessories.map(accessoryDisplay).join(', '),
           _b!.accessories.map(accessoryDisplay).join(', '));
-      add('Model', _a!.nameEn ?? '未确认', _b!.nameEn ?? '未确认');
+      add('Model', _a!.nameEn ?? tr('compare_unconfirmed'), _b!.nameEn ?? tr('compare_unconfirmed'));
       add('Origin', originDisplay(_a!.origin), originDisplay(_b!.origin));
       add('Year', _a!.year, _b!.year);
-      add('Reference Price', _a!.price ?? '未确认', _b!.price ?? '未确认');
+      add('Reference Price', _a!.price ?? tr('compare_unconfirmed'), _b!.price ?? tr('compare_unconfirmed'));
     }
     final diffRows = rows.where((r) => r.diff).toList();
     final shown = _diffOnly ? diffRows : rows;
     return Scaffold(
-      appBar: const SubPageAppBar(title: '两枪参数对比'),
+      appBar: SubPageAppBar(title: tr('compare_title')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('只对照纸面参数；初速与弹道系数未收录，不画弹道曲线。',
+          Text(tr('compare_note'),
               style: TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 16),
           Row(
@@ -96,13 +97,13 @@ class _GunCompareScreenState extends State<GunCompareScreen> {
                 child: OutlinedButton(
                   onPressed: () => _pick(true),
                   child: Text(
-                      _a == null ? '选第一把枪' : gunDisplayName(_a!),
+                      _a == null ? tr('compare_pick_first') : gunDisplayName(_a!),
                       maxLines: 1, overflow: TextOverflow.ellipsis),
                 ),
               ),
               IconButton(
                 icon: const Icon(Icons.swap_horiz, size: 20),
-                tooltip: '交换两把',
+                tooltip: tr('compare_swap'),
                 onPressed: _a != null && _b != null
                     ? () => setState(() {
                           final t = _a;
@@ -115,7 +116,7 @@ class _GunCompareScreenState extends State<GunCompareScreen> {
                 child: OutlinedButton(
                   onPressed: () => _pick(false),
                   child: Text(
-                      _b == null ? '选第二把枪' : gunDisplayName(_b!),
+                      _b == null ? tr('compare_pick_second') : gunDisplayName(_b!),
                       maxLines: 1, overflow: TextOverflow.ellipsis),
                 ),
               ),
@@ -124,20 +125,20 @@ class _GunCompareScreenState extends State<GunCompareScreen> {
           const SizedBox(height: 16),
           if (_a != null && _b != null) ...[
             Text(
-                '${rows.length} 项里 ${diffRows.length} 项不同${diffRows.isNotEmpty ? '：${diffRows.map((r) => r.label).join(', ')}' : ''}',
+                tr('compare_diff_a') + '${diffRows.length}' + tr('compare_diff_b') + '${rows.length}' + tr('compare_diff_c') + (diffRows.isNotEmpty ? tr('compare_diff_list_prefix') + diffRows.map((r) => r.label).join(', ') : ''),
                 style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerLeft,
               child: FilterChip(
-                label: const Text('只看不同项'),
+                label: Text(tr('compare_diff_only')),
                 selected: _diffOnly,
                 onSelected: (v) => setState(() => _diffOnly = v),
               ),
             ),
             const SizedBox(height: 8),
             if (shown.isEmpty)
-              const Text('两把枪这些参数完全相同。',
+              Text(tr('compare_identical'),
                   style: TextStyle(color: Colors.grey))
             else
               ...shown.map((r) => _Row(r)),
@@ -163,10 +164,10 @@ class _GunCompareScreenState extends State<GunCompareScreen> {
                 ],
               ),
           ] else
-            const Center(
+            Center(
               child: Padding(
                 padding: EdgeInsets.only(top: 32),
-                child: Text('两把枪都选好后，这里出现对照表'),
+                child: Text(tr('compare_pick_both')),
               ),
             ),
         ],

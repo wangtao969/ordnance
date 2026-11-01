@@ -122,7 +122,7 @@ class _CommunityBoardScreenState extends State<CommunityBoardScreen> {
             widget.board != '全部' &&
             me.followedBoards.contains(widget.board);
         return Scaffold(
-          appBar: SubPageAppBar(title: widget.board == '全部' ? '全部帖子' : widget.board),
+          appBar: SubPageAppBar(title: widget.board == '全部' ? tr('board_all_posts') : trBoard(widget.board)),
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -185,7 +185,7 @@ class _CommunityBoardScreenState extends State<CommunityBoardScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  widget.board == '全部' ? '全部帖子' : widget.board,
+                                  widget.board == '全部' ? tr('board_all_posts') : trBoard(widget.board),
                                   style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold),
@@ -202,10 +202,10 @@ class _CommunityBoardScreenState extends State<CommunityBoardScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              Text('${boardPosts.length} 帖',
+                              Text('${boardPosts.length}' + tr('board_posts_suffix'),
                                   style: TextStyle(
                                       color: grey, fontSize: 12)),
-                              Text('热度 $heat',
+                              Text(tr('board_heat_prefix') + '$heat',
                                   style: TextStyle(
                                       color: grey, fontSize: 12)),
                             ],
@@ -225,7 +225,7 @@ class _CommunityBoardScreenState extends State<CommunityBoardScreen> {
                               communityStore
                                   .toggleBoardFollow(widget.board);
                             },
-                            child: Text(followed ? '已关注' : '关注板块'),
+                            child: Text(followed ? tr('board_followed') : tr('board_follow')),
                           ),
                         ),
                       ],
@@ -246,7 +246,7 @@ class _CommunityBoardScreenState extends State<CommunityBoardScreen> {
                         // 聚焦边与未聚焦同一支（圆角 20 灰边）：只写 border 时
                         // 聚焦会回落全局橙色圆角 12 边，框里再冒一个框。
                         decoration: InputDecoration(
-                          hintText: '搜索本板块的帖子标题、内容、话题',
+                          hintText: tr('board_search_hint'),
                           prefixIcon: const Icon(Icons.search),
                           border: const OutlineInputBorder(
                             borderRadius:
@@ -287,7 +287,7 @@ class _CommunityBoardScreenState extends State<CommunityBoardScreen> {
               Row(
                 children: [
                   ChoiceChip(
-                    label: const Text('最新'),
+                    label: Text(tr('board_latest')),
                     selected: _sort == 'time',
                     selectedColor: const Color(0xFF6B5B3E),
                     labelStyle: TextStyle(
@@ -299,7 +299,7 @@ class _CommunityBoardScreenState extends State<CommunityBoardScreen> {
                   ),
                   const SizedBox(width: 8),
                   ChoiceChip(
-                    label: const Text('最热'),
+                    label: Text(tr('board_hottest')),
                     selected: _sort == 'hot',
                     selectedColor: const Color(0xFF6B5B3E),
                     labelStyle: TextStyle(
@@ -331,7 +331,7 @@ class _CommunityBoardScreenState extends State<CommunityBoardScreen> {
                             boardPosts.isEmpty &&
                                     _query.isEmpty &&
                                     _tag == null
-                                ? '这个板块还没有帖子'
+                                ? tr('board_empty')
                                 : tr('no_posts'),
                             style: TextStyle(color: grey)),
                         const SizedBox(height: 4),
@@ -339,7 +339,7 @@ class _CommunityBoardScreenState extends State<CommunityBoardScreen> {
                             boardPosts.isEmpty &&
                                     _query.isEmpty &&
                                     _tag == null
-                                ? '还没有人晒枪 · 去图鉴选一把，发第一条'
+                                ? tr('board_empty_show')
                                 : tr('no_posts_sub'),
                             style: TextStyle(color: grey, fontSize: 12)),
                         if (boardPosts.isEmpty &&
@@ -348,7 +348,7 @@ class _CommunityBoardScreenState extends State<CommunityBoardScreen> {
                           const SizedBox(height: 12),
                           OutlinedButton(
                             onPressed: _openComposer,
-                            child: const Text('来发第一条'),
+                            child: Text(tr('board_post_first')),
                           ),
                         ],
                       ],
@@ -357,11 +357,11 @@ class _CommunityBoardScreenState extends State<CommunityBoardScreen> {
                 ),
               // 置顶帖单独成区（贴吧/虎扑式），其余是全部主题。
               if (visible.any((p) => p.pinned)) ...[
-                const _SectionLabel('置顶'),
+                _SectionLabel(tr('board_section_pinned')),
                 ...visible
                     .where((p) => p.pinned)
                     .map((p) => _threadRow(p, grey)),
-                const _SectionLabel('全部主题'),
+                _SectionLabel(tr('board_section_all')),
                 ...visible
                     .where((p) => !p.pinned)
                     .map((p) => _threadRow(p, grey)),
@@ -444,7 +444,7 @@ class _ThreadRow extends StatelessWidget {
                           color: grey.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Text('该帖已被举报，待审核，点击查看原文'),
+                        child: Text(tr('board_reported_hidden')),
                       )
                     else ...[
                       Row(
@@ -459,15 +459,15 @@ class _ThreadRow extends StatelessWidget {
                           ),
                           if (p.pinned) ...[
                             const SizedBox(width: 6),
-                            const _Badge('置顶', Colors.red),
+                            _Badge(tr('board_badge_pinned'), Colors.red),
                           ],
                           if (p.essence) ...[
                             const SizedBox(width: 6),
-                            const _Badge('精华', Colors.amber),
+                            _Badge(tr('board_badge_essence'), Colors.amber),
                           ],
                           if (p.reported) ...[
                             const SizedBox(width: 6),
-                            const _Badge('已举报', Colors.orange),
+                            _Badge(tr('board_badge_reported'), Colors.orange),
                           ],
                         ],
                       ),
@@ -514,7 +514,7 @@ class _ThreadRow extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '回复 ${p.comments.length} · 点赞 ${p.likedBy.length}',
+                            tr('board_replies_label') + ' ${p.comments.length} · ' + tr('board_likes_label') + ' ${p.likedBy.length}',
                             style: TextStyle(color: grey, fontSize: 12),
                           ),
                         ],
@@ -523,7 +523,7 @@ class _ThreadRow extends StatelessWidget {
                       if (p.comments.isNotEmpty) ...[
                         const SizedBox(height: 2),
                         Text(
-                          '最后回复 ${p.comments.last.authorNickname} · ${CommunityStore.formatTime(p.comments.last.time)}',
+                          tr('board_last_reply_prefix') + '${p.comments.last.authorNickname} · ${CommunityStore.formatTime(p.comments.last.time)}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(color: grey, fontSize: 12),
@@ -575,29 +575,29 @@ class _SectionLabel extends StatelessWidget {
 String _boardDescription(String board) {
   switch (board) {
     case '全部':
-      return '全部板块的帖子汇总';
+      return tr('board_desc_all');
     case '晒枪':
-      return '晒出你的装备与收藏';
+      return tr('board_desc_show');
     case '复装心得':
-      return '装药、弹头、工具的实战经验（这里是讨论区，查装药数据请用工具 Tab 里的复装手册）';
+      return tr('board_desc_reload');
     case '求助问答':
-      return '新手提问，老手解答';
+      return tr('board_desc_qa');
     case '资讯':
-      return '行业新闻与新品动态';
+      return tr('board_desc_news');
     case '枪械评测':
-      return '对着图鉴写评测';
+      return tr('board_desc_review');
     case '新手入门':
-      return '从零开始的入门指南';
+      return tr('board_desc_beginner');
     case '配件分享':
-      return '瞄具、握把、枪灯的搭配与测评';
+      return tr('board_desc_accessory');
     case '射击技巧':
-      return '姿势、归零、靶场经验';
+      return tr('board_desc_skill');
     case '历史名枪':
-      return '名枪背后的历史与故事';
+      return tr('board_desc_history');
     case '靶场日记':
-      return '打靶记录与日常';
+      return tr('board_desc_diary');
     default:
-      return '什么都能聊的综合区';
+      return tr('board_desc_default');
   }
 }
 

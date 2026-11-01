@@ -240,7 +240,18 @@ Widget _avatarPickerRow({
   );
 }
 
-const _avatarFrames = ['', 'copper', 'gold', 'rainbow'];
+const _avatarFrames = [
+  '',
+  'copper',
+  'gold',
+  'rainbow',
+  'silver',
+  'emerald',
+  'sapphire',
+  'violet',
+  'crimson',
+  'gunmetal',
+];
 
 String _frameLabel(String frame) {
   switch (frame) {
@@ -250,6 +261,18 @@ String _frameLabel(String frame) {
       return tr('frame_gold');
     case 'rainbow':
       return tr('frame_rainbow');
+    case 'silver':
+      return tr('frame_silver');
+    case 'emerald':
+      return tr('frame_emerald');
+    case 'sapphire':
+      return tr('frame_sapphire');
+    case 'violet':
+      return tr('frame_violet');
+    case 'crimson':
+      return tr('frame_crimson');
+    case 'gunmetal':
+      return tr('frame_gunmetal');
     default:
       return tr('frame_none');
   }
@@ -262,7 +285,9 @@ Widget _framePickerRow({
   required StateSetter setDialogState,
   required ValueChanged<String> onPick,
 }) {
-  return Row(
+  // 2.2.5：10 个框横排会溢出，改 Wrap 换行（横向间距仍用内层 right:16）。
+  return Wrap(
+    runSpacing: 12,
     children: _avatarFrames.map((f) {
       final selected = f == frame;
       return Padding(
@@ -412,7 +437,7 @@ Future<bool> showRegisterDialog(BuildContext context) async {
             const SizedBox(height: 12),
             TextField(
               controller: inviteCtrl,
-              decoration: _glassField(context, '邀请码（可选，填邀请人的 ID）'),
+              decoration: _glassField(context, tr('dialogs_invite_hint')),
             ),
             if (error != null) _errorBar(error!),
           ],

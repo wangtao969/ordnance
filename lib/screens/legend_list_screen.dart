@@ -27,7 +27,7 @@ class LegendListScreen extends StatelessWidget {
                 Text(tr('legends'),
                     style: TextStyle(
                         fontSize: 20, fontWeight: FontWeight.bold)),
-                Text('共 ${legends.length} 支',
+                Text(tr('legend_count_prefix') + '${legends.length}' + tr('legend_count_suffix'),
                     style: const TextStyle(color: Colors.grey)),
               ],
             ),

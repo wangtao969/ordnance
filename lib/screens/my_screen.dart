@@ -5,14 +5,12 @@ import '../widgets/app_top_bar.dart';
 import '../widgets/level_badge.dart';
 import '../widgets/app_toast.dart';
 import 'community_account_dialogs.dart';
-import 'community_collection_screen.dart';
 import 'community_dm_screen.dart';
-import 'community_notifications_screen.dart';
 import 'community_profile_screen.dart';
 import 'community_range_screen.dart';
 
-/// 我的 Tab：个人中心入口。登录后显示头像、等级铭牌、本期挑战与统计，
-/// 下分我的主页、收藏柜、靶场成绩、任务、设置；未登录时显示登录/注册。
+/// 我的 Tab：个人中心入口。登录后显示头像、等级铭牌与统计，
+/// 下分我的主页、私信、靶场成绩、设置；未登录时显示登录/注册。
 class MyScreen extends StatelessWidget {
   const MyScreen({super.key});
 
@@ -32,7 +30,7 @@ class MyScreen extends StatelessWidget {
                 16,
                 110),
             children: [
-              const Text('我的',
+              Text(tr('tab_mine'),
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               if (me == null)
@@ -120,12 +118,6 @@ class MyScreen extends StatelessWidget {
                           Text('${tr('id_field')}：${me.id}',
                               style: const TextStyle(
                                   color: Colors.grey, fontSize: 12)),
-                          Text(
-                              '本期挑战 ${communityStore.challengeDone(me)}/${challengeCatalog.length} 已完成',
-                              style: const TextStyle(
-                                  color: Color(0xFFE86A1C),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold)),
                           if (me.bio.isNotEmpty) ...[
                             const SizedBox(height: 4),
                             Text(me.bio),
@@ -148,17 +140,17 @@ class MyScreen extends StatelessWidget {
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _Stat('发帖', '$myPosts'),
-                      _Stat('收藏', '$myFavorites'),
-                      _Stat('勋章', '$earned/${medalCatalog.length}'),
-                      _Stat('藏枪', '${me.collection.length}'),
+                      _Stat(tr('admin_row_posts'), '$myPosts'),
+                      _Stat(tr('admin_row_collection'), '$myFavorites'),
+                      _Stat(tr('my_medals'), '$earned/${medalCatalog.length}'),
+                      _Stat(tr('my_guns'), '${me.collection.length}'),
                     ],
                   );
                 }),
                 const SizedBox(height: 16),
                 _MenuTile(
                   icon: Icons.person_outlined,
-                  title: '我的主页',
+                  title: tr('my_home'),
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -167,64 +159,37 @@ class MyScreen extends StatelessWidget {
                   ),
                 ),
                 Builder(builder: (_) {
-                  final unread = communityStore.unreadCount(me.id);
                   final unreadDm = communityStore
                       .notificationsFor(me.id)
                       .where((n) => n.kind == 'dm' && !n.read)
                       .length;
-                  return Column(
-                    children: [
-                      _MenuTile(
-                        icon: Icons.notifications_outlined,
-                        title: '通知',
-                        badge: unread,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) =>
-                                  const CommunityNotificationsScreen()),
-                        ),
-                      ),
-                      _MenuTile(
-                        icon: Icons.mail_outlined,
-                        title: '私信',
-                        badge: unreadDm,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const CommunityDmScreen()),
-                        ),
-                      ),
-                    ],
+                  return _MenuTile(
+                    icon: Icons.mail_outlined,
+                    title: tr('my_dms'),
+                    badge: unreadDm,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const CommunityDmScreen()),
+                    ),
                   );
                 }),
                 _MenuTile(
-                  icon: Icons.inventory_2_outlined,
-                  title: '我的收藏柜',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) =>
-                            const CommunityCollectionScreen()),
-                  ),
-                ),
-                _MenuTile(
                   icon: Icons.gps_fixed,
-                  title: '靶场成绩',
+                  title: tr('admin_row_scores'),
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (_) => const CommunityRangeScreen()),
                   ),
                 ),
-                                if (communityStore.isAdmin || communityStore.isModerator)
                                                   _MenuTile(
                   icon: Icons.logout_outlined,
-                  title: '退出登录',
+                  title: tr('my_logout'),
                   titleColor: Colors.red,
                   onTap: () {
                     communityStore.logout();
-                    showAppToast(context, '已退出登录');
+                    showAppToast(context, tr('my_logged_out'));
                   },
                 ),
                               ],

@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../widgets/app_toast.dart';
 import 'package:flutter/services.dart';
 import '../community_store.dart';
 import '../i18n.dart';
+import '../system_actions.dart';
 import '../widgets/app_top_bar.dart';
 import '../widgets/community_theme.dart';
 import '../widgets/level_badge.dart';
@@ -10,6 +12,7 @@ import 'community_board_screen.dart';
 import 'community_profile_screen.dart';
 
 /// 帖子详情：完整内容、图片、@高亮、点赞收藏分享、评论列表、底部快捷回复。
+/// 附件行：定位、天气快照、视频系统播放；成就动态在昵称行带成就 chip。
 /// 作者本人的管理菜单：置顶 / 精华 / 删除；别人的帖子：举报。
 class CommunityPostDetailScreen extends StatefulWidget {
   final CommunityPost post;
@@ -55,14 +58,29 @@ class _CommunityPostDetailScreenState
     return Text.rich(TextSpan(children: spans, style: const TextStyle(fontSize: 15)));
   }
 
+  /// 视频附件系统播放：先查文件在不在——不在报“视频文件已丢失”，
+  /// 在但原生返回 false 说明没有可播放视频的应用；两种都不闪退。
+  Future<void> _playVideo(String path) async {
+    if (!await File(path).exists()) {
+      if (mounted) showAppToast(context, tr('post_video_missing'));
+      return;
+    }
+    final ok = await openVideoFile(path);
+    if (!ok && mounted) showAppToast(context, tr('post_video_no_player'));
+  }
+
   Future<void> _share() async {
     final p = widget.post;
-    final text = '${p.title}\n${p.content}\n—— 来自 Gun’s Map 社区';
+    // 分享文案后缀按语言切换（2.2.5 全量英文）。
+    final suffix = localeNotifier.value == localeEn
+        ? '— From the Gun’s Map community'
+        : '—— 来自 Gun’s Map 社区';
+    final text = '${p.title}\n${p.content}\n$suffix';
     try {
       await _shareChannel.invokeMethod('shareText', {'text': text});
     } catch (_) {
       if (mounted) {
-        showAppToast(context, '分享失败，系统分享通道不可用');
+        showAppToast(context, tr('post_share_failed'));
       }
     }
   }
@@ -97,24 +115,24 @@ class _CommunityPostDetailScreenState
             if (isMine) ...[
               ListTile(
                 leading: const Icon(Icons.push_pin_outlined),
-                title: Text(p.pinned ? '取消置顶' : '置顶'),
+                title: Text(p.pinned ? tr('admin_btn_unpin') : tr('admin_btn_pin')),
                 onTap: () => Navigator.pop(context, 'pin'),
               ),
               ListTile(
                 leading: const Icon(Icons.star_outline),
-                title: Text(p.essence ? '取消精华' : '设为精华'),
+                title: Text(p.essence ? tr('admin_btn_unessence') : tr('post_set_essence')),
                 onTap: () => Navigator.pop(context, 'essence'),
               ),
               ListTile(
                 leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: const Text('删除帖子',
+                title: Text(tr('post_delete'),
                     style: TextStyle(color: Colors.red)),
                 onTap: () => Navigator.pop(context, 'delete'),
               ),
             ] else
               ListTile(
                 leading: const Icon(Icons.flag_outlined),
-                title: const Text('举报违规内容'),
+                title: Text(tr('post_report')),
                 onTap: () => Navigator.pop(context, 'report'),
               ),
           ],
@@ -133,15 +151,15 @@ class _CommunityPostDetailScreenState
         final confirm = await showDialog<bool>(
           context: context,
           builder: (d) => AlertDialog(
-            title: const Text('删除帖子？'),
-            content: const Text('删除后本机数据无法恢复。'),
+            title: Text(tr('post_delete_title')),
+            content: Text(tr('admin_delete_post_body')),
             actions: [
               TextButton(
                   onPressed: () => Navigator.pop(d, false),
                   child: Text(tr('cancel'))),
               TextButton(
                   onPressed: () => Navigator.pop(d, true),
-                  child: const Text('删除',
+                  child: Text(tr('admin_btn_delete'),
                       style: TextStyle(color: Colors.red))),
             ],
           ),
@@ -152,17 +170,17 @@ class _CommunityPostDetailScreenState
         }
         break;
       case 'report':
-        const reasons = ['违法违规', '辱骂攻击', '广告引流', '与枪无关', '其他'];
+        final reasons = [('违法违规', 'post_report_reason_illegal'), ('辱骂攻击', 'post_report_reason_abuse'), ('广告引流', 'post_report_reason_ads'), ('与枪无关', 'post_report_reason_offtopic'), ('其他', 'feedback_type_other')];
         final reason = await showDialog<String>(
           context: context,
           builder: (d) => AlertDialog(
-            title: const Text('举报这条帖子？'),
+            title: Text(tr('post_report_title')),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: reasons
                   .map((r) => ListTile(
-                        title: Text(r),
-                        onTap: () => Navigator.pop(d, r),
+                        title: Text(tr(r.$2)),
+                        onTap: () => Navigator.pop(d, r.$1),
                       ))
                   .toList(),
             ),
@@ -175,7 +193,7 @@ class _CommunityPostDetailScreenState
         );
         if (reason != null && mounted) {
           communityStore.reportPost(p, reason);
-          showAppToast(context, '已举报，帖子已标记为待审核');
+          showAppToast(context, tr('post_reported'));
         }
         break;
     }
@@ -194,7 +212,7 @@ class _CommunityPostDetailScreenState
         final favorited = me != null && p.favoritedBy.contains(me.id);
         final authorAccount = communityStore.findAccount(p.authorId);
         return Scaffold(
-          appBar: SubPageAppBar(title: '帖子详情'),
+          appBar: SubPageAppBar(title: tr('post_detail_title')),
           body: Column(
             children: [
               Expanded(
@@ -241,10 +259,41 @@ class _CommunityPostDetailScreenState
                                     const SizedBox(width: 6),
                                     LevelBadge(account: authorAccount),
                                   ],
+                                  if (p.achievement.isNotEmpty) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 6, vertical: 1),
+                                      decoration: BoxDecoration(
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                        border: Border.all(
+                                            color:
+                                                const Color(0xFFD4A017)),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                              Icons.emoji_events_outlined,
+                                              size: 12,
+                                              color: Color(0xFFD4A017)),
+                                          const SizedBox(width: 2),
+                                          Text(tr('achievement_badge'),
+                                              style: const TextStyle(
+                                                  fontSize: 11,
+                                                  color: Color(0xFFD4A017),
+                                                  fontWeight:
+                                                      FontWeight.bold)),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                               Text(
-                                  '${CommunityStore.formatTime(p.time)} · ${p.board}',
+                                  '${CommunityStore.formatTime(p.time)} · ${trBoard(p.board)}',
                                   style: TextStyle(color: grey, fontSize: 12)),
                             ],
                           ),
@@ -294,6 +343,46 @@ class _CommunityPostDetailScreenState
                         const SizedBox(height: 8),
                       ],
                     ],
+                    // 发帖附件行（tags/图片区之后）：定位、天气快照、视频播放。
+                    if (p.location.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.location_on_outlined,
+                              size: 16, color: grey),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(p.location,
+                                style: TextStyle(
+                                    color: grey, fontSize: 13)),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (p.weather.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.cloud_outlined,
+                              size: 16, color: grey),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(p.weather,
+                                style: TextStyle(
+                                    color: grey, fontSize: 13)),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (p.videoPath.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: () => _playVideo(p.videoPath),
+                        icon: const Icon(Icons.play_circle_outlined,
+                            size: 20),
+                        label: Text(p.videoPath.split('/').last),
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     Row(
                       children: [
@@ -317,22 +406,22 @@ class _CommunityPostDetailScreenState
                         TextButton.icon(
                           onPressed: _share,
                           icon: const Icon(Icons.share_outlined),
-                          label: const Text('分享'),
+                          label: Text(tr('post_share')),
                         ),
                         if (p.reported) ...[
                           const Spacer(),
-                          const Text('已举报·待审核',
+                          Text(tr('post_reported_badge'),
                               style: TextStyle(
                                   color: Colors.orange, fontSize: 12)),
                         ],
                       ],
                     ),
                     const Divider(),
-                    Text('评论（${p.comments.length}）',
+                    Text(tr('post_comments_prefix') + '${p.comments.length}' + tr('post_comments_suffix'),
                         style: const TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     if (p.comments.isEmpty)
-                      Text('还没有评论，来抢沙发',
+                      Text(tr('post_no_comments'),
                           style: TextStyle(color: grey)),
                     ...p.comments.map((c) {
                       final cLiked =
@@ -411,7 +500,7 @@ class _CommunityPostDetailScreenState
                                                       _replyCtrl.text.length),
                                             );
                                           },
-                                    child: const Text('回复'),
+                                    child: Text(tr('post_reply')),
                                   ),
                                 ],
                               ),
@@ -437,8 +526,8 @@ class _CommunityPostDetailScreenState
                       Expanded(
                         child: TextField(
                           controller: _replyCtrl,
-                          decoration: const InputDecoration(
-                            hintText: '写下你的回复……（@ID 可提醒对方）',
+                          decoration: InputDecoration(
+                            hintText: tr('post_reply_hint'),
                             border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                             isDense: true,
                           ),

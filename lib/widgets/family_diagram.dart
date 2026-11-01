@@ -95,6 +95,96 @@ const Map<String, (String, List<String>)> familyDiagramInfo = {
   ),
 };
 
+/// 族系识别图英文版（2.2.5 全量英文）：与 familyDiagramInfo 同 key，
+/// 中文原文不动；英文界面显示本表。
+const Map<String, (String, List<String>)> familyDiagramInfoEn = {
+  'ar': (
+    'AR family',
+    ['Railed receiver top for mounting optics', 'Fairly straight magazine with only a slight curve', 'Collapsible stock is a common marker', 'Charging handle above the rear of the receiver'],
+  ),
+  'glock': (
+    'Glock family',
+    ['Square-edged, angular slide', 'No exposed hammer', 'Square trigger guard', 'Large grip angle'],
+  ),
+  'aw': (
+    'Accuracy International AW family',
+    ['Large-objective scope', 'Heavy barrel with muzzle brake', 'Thumbhole adjustable stock', 'Detachable magazine and bipod'],
+  ),
+  'mauser98': (
+    'Mauser 98 family',
+    ['Turn-bolt action with downward-bent bolt handle', 'Wooden handguard running almost to the muzzle', 'Internal magazine, bridge-clip guide on the receiver top', 'Blade front sight'],
+  ),
+  'mossberg': (
+    'Mossberg family',
+    ['Top-mounted safety at the rear of the receiver', 'Pump-action forend', 'Tubular magazine under the barrel', 'Bead front sight'],
+  ),
+  'm14': (
+    'M14 family',
+    ['Wooden stock and handguard', '20-round detachable magazine', 'Gas-operated semi-auto action', 'Peep rear sight at the rear of the receiver'],
+  ),
+  'cheytac': (
+    'CheyTac family',
+    ['Extra-long heavy barrel with large muzzle brake', 'Large-objective scope', 'Adjustable cheek riser and bipod', 'Turn-bolt action'],
+  ),
+  'sigclassic': (
+    'SIG classic P family',
+    ['Exposed hammer and decocking lever', 'Alloy frame', 'Fairly flat slide top', 'Double/single-action trigger'],
+  ),
+  'sig': (
+    'SIG family',
+    ['Slide and grip profile of the SIG pistol family', 'Mostly compact pistols', 'Accessory rail ahead of the trigger guard (some models)', 'Represented by the P250 and P238'],
+  ),
+  'sigbolt': (
+    'SIG bolt-action rifle family',
+    ['Large-objective scope', 'Turn-bolt action', 'Adjustable cheek-riser stock', 'Detachable magazine'],
+  ),
+  'savage': (
+    'Savage family',
+    ['Free-floated barrel and AccuTrigger', 'Detachable magazine', 'Synthetic stock', 'Turn-bolt action'],
+  ),
+  'tac': (
+    'McMillan TAC family',
+    ['Extra-long heavy barrel and large muzzle brake', 'McMillan adjustable stock', 'Large-objective scope and bipod', 'Turn-bolt action'],
+  ),
+  'tikka': (
+    'Tikka family',
+    ['Slim barrel and scope', 'Detachable magazine', 'Turn-bolt action', 'Plain synthetic stock'],
+  ),
+  'sako': (
+    'Sako family',
+    ['TRG-style adjustable stock', 'Muzzle brake and large-objective scope', 'Turn-bolt action', 'Detachable magazine'],
+  ),
+  'sauer': (
+    'Sauer family',
+    ['Classic hunting-rifle stock', 'Scope', 'Internal magazine', 'Turn-bolt action'],
+  ),
+  'bergara': (
+    'Bergara family',
+    ['HMR-style adjustable cheek-riser stock', 'Vertical grip', 'Scope and detachable magazine', 'Heavy barrel'],
+  ),
+  'rem700': (
+    'Remington 700 family',
+    ['Cylindrical receiver', 'Scope', 'Classic sporter stock', 'Turn-bolt action'],
+  ),
+  'galil': (
+    'Galil family',
+    ['Curved AK-style magazine', 'Folding stock', 'Carry handle above the handguard', 'Front post and rear sight'],
+  ),
+  'ak12': (
+    'AK-12 family',
+    ['Full-length top rail on the receiver', 'Modern polymer handguard', 'Curved AK-style magazine', 'Folding stock and muzzle brake'],
+  ),
+  'p320': (
+    'SIG P320 family',
+    ['No exposed hammer (striker-fired)', 'Modular grip', 'Front slide serrations', 'Accessory rail ahead of the trigger guard'],
+  ),
+  'rem': (
+    'Remington family',
+    ['Synthetic-stock bolt-action rifle', 'Scope', 'Detachable magazine (some models)', 'Turn-bolt action'],
+  ),
+};
+
+
 /// 该枪是否有前 5 族系的识别图；有则返回族系 key，否则返回 null。
 String? familyDiagramOf(Gun gun) {
   final n = gun.name

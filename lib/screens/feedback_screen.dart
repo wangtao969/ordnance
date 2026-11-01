@@ -49,7 +49,9 @@ super.dispose();
 
 String _now() {
 final n = DateTime.now();
-return '${n.month}月${n.day}日 ${n.hour.toString().padLeft(2, '0')}:${n.minute.toString().padLeft(2, '0')}';
+final hm = '${n.hour.toString().padLeft(2, '0')}:${n.minute.toString().padLeft(2, '0')}';
+if (localeNotifier.value == localeEn) return '${n.month}/${n.day} $hm';
+return '${n.month}月${n.day}日 $hm';
 }
 
 /// 点邮箱行直接跳转手机邮箱应用：走 gunsmap/mailto 原生通道，
@@ -187,7 +189,7 @@ crossAxisAlignment: CrossAxisAlignment.start,
 children: [
 Row(
 children: [
-Chip(label: Text(f.type)),
+Chip(label: Text(_typeLabel(f.type))),
 const SizedBox(width: 8),
 Text(f.time,
 style: TextStyle(color: grey, fontSize: 12)),

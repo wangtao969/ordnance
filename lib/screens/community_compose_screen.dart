@@ -3,11 +3,15 @@ import '../widgets/app_toast.dart';
 import 'package:flutter/services.dart';
 import '../community_store.dart';
 import '../i18n.dart';
+import '../sensors_api.dart';
+import '../weather_api.dart';
 import '../widgets/liquid_glass_nav.dart';
 
 /// 发帖器（Threads 风格排版）：顶部左边取消、右边液态玻璃发布按钮；
-/// 下方头像 + 用户名一行，配大面积无边框纯文本输入框；附件行只留
-/// 编辑器已有的选图能力；不加回复权限选择器（原先就没有）。
+/// 下方头像 + 用户名一行，配大面积无边框纯文本输入框；附件行：
+/// 图片（已有链路）/ 定位（GPS）/ 天气快照（复用天气系统）/ 视频
+/// （系统选视频，存沙盒路径）；附件不进草稿，只活在本次编辑器里；
+/// 不加回复权限选择器（原先就没有）。
 /// 标题（可选）、板块选择、自动草稿与清除草稿等已有能力全部保留。
 /// 每敲一个字都更新草稿：写一半切后台再回来，内容还在；
 /// 发布成功自动清草稿；草稿保存在本机。
@@ -24,6 +28,10 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
   late final TextEditingController _contentCtrl;
   String _board = '综合';
   final _images = <Uint8List>[];
+  // 附件（不进草稿）：定位文字、天气快照文字、视频沙盒路径。
+  String _location = '';
+  String _weather = '';
+  String _videoPath = '';
 
   @override
   void initState() {
@@ -68,10 +76,102 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
     }
   }
 
+  /// 定位附件：先申请定位权限，再取 GPS 经纬度（5 位小数）存文字；
+  /// 被拒或失败给可读提示，不阻塞发帖。
+  Future<void> _addLocation() async {
+    final granted = await requestLocationPermission();
+    if (!granted) {
+      if (mounted) showAppToast(context, tr('compose_location_denied'));
+      return;
+    }
+    final fix = await getGpsPosition();
+    final v = fix.value;
+    if (v == null) {
+      if (mounted) showAppToast(context, tr('compose_location_failed'));
+      return;
+    }
+    setState(() => _location =
+        '${v.latitude.toStringAsFixed(5)}, ${v.longitude.toStringAsFixed(5)}');
+  }
+
+  /// 天气快照附件：GPS → Open-Meteo 实况 → buildWeatherSnapshot
+  /// （复用天气系统格式）；只填天气字段，不顺带写定位。
+  Future<void> _addWeather() async {
+    final granted = await requestLocationPermission();
+    if (!granted) {
+      if (mounted) showAppToast(context, tr('compose_location_denied'));
+      return;
+    }
+    final fix = await getGpsPosition();
+    final v = fix.value;
+    if (v == null) {
+      if (mounted) showAppToast(context, tr('compose_location_failed'));
+      return;
+    }
+    try {
+      final w = await fetchWeather(v.latitude, v.longitude);
+      final snap = buildWeatherSnapshot(w, _location);
+      if (mounted) setState(() => _weather = snap);
+    } catch (_) {
+      if (mounted) showAppToast(context, tr('compose_weather_failed'));
+    }
+  }
+
+  /// 视频附件：系统选视频（ACTION_GET_CONTENT video/*），原生侧拷到
+  /// cacheDir/videos 后返回沙盒路径，存 post.videoPath；用户取消不提示。
+  Future<void> _addVideo() async {
+    try {
+      final path =
+          await _pickImageChannel.invokeMethod<String>('pickVideo');
+      if (path == null || path.isEmpty) return;
+      if (mounted) setState(() => _videoPath = path);
+    } catch (_) {
+      if (mounted) showAppToast(context, tr('compose_video_failed'));
+    }
+  }
+
+  Widget _attachButton(IconData icon, String label, VoidCallback onTap) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final grey = dark ? const Color(0xFF8A8578) : const Color(0xFF9A917F);
+    return GestureDetector(
+      onTap: onTap,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 22, color: grey),
+          const SizedBox(width: 6),
+          Text(label, style: TextStyle(color: grey, fontSize: 14)),
+        ],
+      ),
+    );
+  }
+
+  /// 已选附件行：值 + 删除叉号（附件不进草稿，删了就没了）。
+  Widget _attachedRow(IconData icon, String value, VoidCallback onClear) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final grey = dark ? const Color(0xFF8A8578) : const Color(0xFF9A917F);
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: grey),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(value,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: grey, fontSize: 13)),
+        ),
+        GestureDetector(
+          onTap: onClear,
+          child: Icon(Icons.close, size: 16, color: grey),
+        ),
+      ],
+    );
+  }
+
   void _publish() {
     final content = _contentCtrl.text.trim();
     if (content.isEmpty) {
-      showAppToast(context, '正文不能为空');
+      showAppToast(context, tr('compose_body_empty'));
       return;
     }
     final err = communityStore.createPost(
@@ -79,26 +179,24 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
       content: content,
       board: _board,
       images: _images,
+      location: _location,
+      weather: _weather,
+      videoPath: _videoPath,
     );
     if (err != null) {
-      if (err == '请先登录') {
+      if (err == tr('store_err_not_logged')) {
         showAppToast(context, tr('login_required_body'));
-      } else if (err == '账号已被禁言' ||
-          err == '账号已被封禁' ||
-          err == '该板块已关闭') {
+      } else if (err == tr('store_err_muted') ||
+          err == tr('store_err_banned') ||
+          err == tr('store_err_board_closed')) {
         showAppToast(context, err);
       } else {
         showAppToast(context, err);
       }
       return;
     }
-    // 发动态自动签到：当天还没签到就顺手签了，返回 true 让动态页提示。
-    var autoChecked = false;
-    final me = communityStore.current;
-    if (me != null && !me.checkedInToday) {
-      autoChecked = communityStore.checkIn() >= 0;
-    }
-    Navigator.of(context).pop(autoChecked);
+    // 发布成功返回 true，让动态页提示（签到已随任务屏删除，不再自动签到）。
+    Navigator.of(context).pop(true);
   }
 
   @override
@@ -173,8 +271,8 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
               onChanged: (_) => _saveDraft(),
               style: TextStyle(
                   color: fg, fontSize: 16, fontWeight: FontWeight.bold),
-              decoration: const InputDecoration(
-                hintText: '标题（可选）',
+              decoration: InputDecoration(
+                hintText: tr('compose_title_hint'),
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
@@ -194,7 +292,7 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
                     child: Padding(
                       padding: const EdgeInsets.only(right: 16, top: 10),
                       child: Text(
-                        b,
+                        trBoard(b),
                         style: TextStyle(
                           color: selected ? fg : grey,
                           fontSize: 13,
@@ -216,39 +314,70 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
               maxLines: null,
               keyboardType: TextInputType.multiline,
               style: TextStyle(color: fg, fontSize: 16, height: 1.5),
-              decoration: const InputDecoration(
-                hintText: '写点什么……\n话题用 #话题# 的形式，@ID 可以提醒对方',
+              decoration: InputDecoration(
+                hintText: tr('compose_body_hint'),
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
               ),
             ),
             const SizedBox(height: 8),
-            Text('话题用 #xxx# 包起来，发布后会变成可点击的标签；@对方 ID 可发提醒。',
+            Text(tr('compose_tag_note'),
                 style: TextStyle(color: grey, fontSize: 12)),
             const SizedBox(height: 16),
-            // 附件行：只保留已有的选图能力。
-            Row(
+            // 附件行：图片 / 定位 / 天气快照 / 视频。
+            Wrap(
+              spacing: 20,
+              runSpacing: 12,
               children: [
-                GestureDetector(
-                  onTap: _addImage,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.add_photo_alternate_outlined,
-                          size: 22, color: grey),
-                      const SizedBox(width: 6),
-                      Text(
-                        _images.isEmpty
-                            ? '添加图片'
-                            : '添加图片（${_images.length}）',
-                        style: TextStyle(color: grey, fontSize: 14),
-                      ),
-                    ],
-                  ),
+                _attachButton(
+                  Icons.add_photo_alternate_outlined,
+                  _images.isEmpty
+                      ? tr('compose_add_image')
+                      : tr('compose_add_image_prefix') +
+                          '${_images.length}' +
+                          tr('compose_add_image_suffix'),
+                  _addImage,
+                ),
+                _attachButton(
+                  Icons.location_on_outlined,
+                  _location.isEmpty
+                      ? tr('compose_add_location')
+                      : tr('compose_location_added'),
+                  _addLocation,
+                ),
+                _attachButton(
+                  Icons.cloud_outlined,
+                  _weather.isEmpty
+                      ? tr('compose_add_weather')
+                      : tr('compose_weather_added'),
+                  _addWeather,
+                ),
+                _attachButton(
+                  Icons.videocam_outlined,
+                  _videoPath.isEmpty
+                      ? tr('compose_add_video')
+                      : _videoPath.split('/').last,
+                  _addVideo,
                 ),
               ],
             ),
+            if (_location.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _attachedRow(Icons.location_on_outlined, _location,
+                  () => setState(() => _location = '')),
+            ],
+            if (_weather.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              _attachedRow(Icons.cloud_outlined, _weather,
+                  () => setState(() => _weather = '')),
+            ],
+            if (_videoPath.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              _attachedRow(Icons.videocam_outlined,
+                  _videoPath.split('/').last,
+                  () => setState(() => _videoPath = '')),
+            ],
             if (_images.isNotEmpty) ...[
               const SizedBox(height: 12),
               Wrap(
@@ -291,7 +420,7 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
             Row(
               children: [
                 Expanded(
-                  child: Text('草稿会自动保存，下次打开可以继续写。',
+                  child: Text(tr('compose_draft_note'),
                       style: TextStyle(color: grey, fontSize: 12)),
                 ),
                 if (hasDraft)
@@ -303,9 +432,12 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
                         _contentCtrl.clear();
                         _board = '综合';
                         _images.clear();
+                        _location = '';
+                        _weather = '';
+                        _videoPath = '';
                       });
                     },
-                    child: Text('清除草稿',
+                    child: Text(tr('compose_clear_draft'),
                         style: TextStyle(color: grey, fontSize: 12)),
                   ),
               ],
@@ -335,12 +467,15 @@ class _GlassPublishButton extends StatelessWidget {
       onTap: onTap,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(18),
+        // 发布按钮保持旧强度（tint 0.08 / blur 28），2.2.5 只加重底部导航。
         child: LiquidGlassBackdrop(
           radius: 18,
+          tint: 0.08,
+          fallbackSigma: 28,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Text(
-              '发布',
+              tr('publish'),
               style: TextStyle(
                 color: fg.withValues(alpha: enabled ? 1 : 0.4),
                 fontWeight: FontWeight.bold,

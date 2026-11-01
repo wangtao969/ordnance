@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import '../i18n.dart';
 
 import 'package:flutter/material.dart';
 import '../community_store.dart';
@@ -163,26 +164,26 @@ class _LevelBadgeState extends State<LevelBadge>
 /// 等级制度弹窗：点铭牌弹出，列出六档段位、等级区间与所需累计经验。
 void showLevelSystemDialog(BuildContext context, CommunityAccount account) {
   const tiers = [
-    ('铁灰', 'LV 1–10', 1, Color(0xFF8A8D91)),
-    ('铜', 'LV 11–20', 11, Color(0xFFB08D57)),
-    ('银', 'LV 21–35', 21, Color(0xFFB9C0C7)),
-    ('金', 'LV 36–48', 36, Color(0xFFD4A017)),
-    ('钛', 'LV 49–55', 49, Color(0xFF7FA8BC)),
-    ('曜石', 'LV 56–60', 56, Color(0xFF4A4A5A)),
+    ('tier_iron', 'LV 1–10', 1, Color(0xFF8A8D91)),
+    ('tier_copper', 'LV 11–20', 11, Color(0xFFB08D57)),
+    ('tier_silver', 'LV 21–35', 21, Color(0xFFB9C0C7)),
+    ('tier_gold', 'LV 36–48', 36, Color(0xFFD4A017)),
+    ('tier_titanium', 'LV 49–55', 49, Color(0xFF7FA8BC)),
+    ('tier_obsidian', 'LV 56–60', 56, Color(0xFF4A4A5A)),
   ];
   final lv = account.level;
   final toNext = lv >= 60
-      ? '已满级'
-      : '距 LV${lv + 1} 还差 ${CommunityAccount.xpForLevel(lv + 1) - account.totalXp} 经验';
+      ? tr('badge_max')
+      : tr('badge_to_next_a') + 'LV${lv + 1}' + tr('badge_to_next_b') + '${CommunityAccount.xpForLevel(lv + 1) - account.totalXp}' + tr('badge_to_next_c');
   showDialog(
     context: context,
     builder: (ctx) => GlassDialog(
-      title: '用户等级',
+      title: tr('badge_level_title'),
       content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('当前：LV$lv · ${account.tierName}（累计 ${account.totalXp} 经验）',
+            Text(tr('badge_current_prefix') + 'LV$lv · ${account.tierName}' + tr('badge_current_total_prefix') + '${account.totalXp}' + tr('badge_current_total_suffix'),
                 style: const TextStyle(fontWeight: FontWeight.bold)),
             Text(toNext, style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 12),
@@ -198,9 +199,9 @@ void showLevelSystemDialog(BuildContext context, CommunityAccount account) {
                           color: t.$4, shape: BoxShape.circle),
                     ),
                     const SizedBox(width: 8),
-                    Text(t.$1,
+                    Text(tr(t.$1),
                         style: TextStyle(
-                            fontWeight: account.tierName == t.$1
+                            fontWeight: account.tierName == tr(t.$1)
                                 ? FontWeight.bold
                                 : FontWeight.normal)),
                     const SizedBox(width: 8),
@@ -210,18 +211,18 @@ void showLevelSystemDialog(BuildContext context, CommunityAccount account) {
                     const Spacer(),
                     Text(
                         t.$3 == 1
-                            ? '0 经验起'
-                            : '需 ${CommunityAccount.xpForLevel(t.$3)} 经验',
+                            ? tr('badge_xp_from_zero')
+                            : tr('badge_xp_needed_prefix') + '${CommunityAccount.xpForLevel(t.$3)}' + tr('badge_xp_needed_suffix'),
                         style: const TextStyle(fontSize: 12)),
                   ],
                 ),
               ),
             const SizedBox(height: 8),
-            const Text('经验来源：签到、发帖、评论、获赞、收藏登记、靶场成绩；每日封顶 120。',
+            Text(tr('badge_xp_sources'),
                 style: TextStyle(color: Colors.grey, fontSize: 12)),
           ],
         ),
-      actions: [glassPrimaryButton(ctx, '知道了')],
+      actions: [glassPrimaryButton(ctx, tr('got_it'))],
     ),
   );
 }
@@ -229,28 +230,28 @@ void showLevelSystemDialog(BuildContext context, CommunityAccount account) {
 /// 身份制度弹窗：点身份弹出，列出软件内设定的全部用户身份与权限。
 void showRoleSystemDialog(BuildContext context) {
   const roles = [
-    ('创始用户', 'ID 10000 的账号', '软件全部权限：人员管理、帖子审核、板块开关与公告配置，不受禁言封禁限制。'),
-    ('管理员', 'role 为 admin 的账号', '人员管理、帖子审核、板块开关与公告配置。'),
-    ('版主', 'role 为 moderator 的账号', '帖子审核：取消举报、置顶、加精、删除。'),
-    ('普通用户', '默认身份', '发帖、评论、收藏、关注、私信，参与挑战、签到与勋章。'),
+    ('community_role_founder', 'role_founder_desc', 'role_founder_perms'),
+    ('community_role_admin', 'role_admin_desc', 'role_admin_perms'),
+    ('community_role_moderator', 'role_mod_desc', 'role_mod_perms'),
+    ('community_role_user', 'role_user_desc', 'role_user_perms'),
   ];
   showDialog(
     context: context,
     builder: (ctx) => GlassDialog(
-      title: '用户身份',
+      title: tr('badge_role_title'),
       content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             for (final r in roles) ...[
-              Text(r.$1, style: const TextStyle(fontWeight: FontWeight.bold)),
-              Text(r.$2, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-              Text(r.$3, style: const TextStyle(fontSize: 13)),
+              Text(tr(r.$1), style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(tr(r.$2), style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              Text(tr(r.$3), style: const TextStyle(fontSize: 13)),
               const SizedBox(height: 10),
             ],
           ],
         ),
-      actions: [glassPrimaryButton(ctx, '知道了')],
+      actions: [glassPrimaryButton(ctx, tr('got_it'))],
     ),
   );
 }
@@ -270,9 +271,9 @@ class IdentityBadge extends StatelessWidget {
   }
 
   String get _label {
-    if (account.isFounder) return '创始用户';
-    if (account.role == 'admin') return '管理员';
-    return '版主';
+    if (account.isFounder) return tr('community_role_founder');
+    if (account.role == 'admin') return tr('community_role_admin');
+    return tr('community_role_moderator');
   }
 
   @override
@@ -325,7 +326,7 @@ class MedalRingBadge extends StatelessWidget {
       child: Center(
         child: earned
             ? Text(
-                medal.name.characters.first,
+                (medal.category == null ? tr(medal.nameKey) : trCategory(medal.category!) + tr('medal_cat_name_suffix')).characters.first,
                 style: TextStyle(
                     color: c,
                     fontSize: size * 0.36,
@@ -341,13 +342,10 @@ class MedalRingBadge extends StatelessWidget {
 /// 默认橙色；社区签到区传入暗红。
 class XpProgressRow extends StatelessWidget {
   final CommunityAccount account;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final Color accent;
   const XpProgressRow(
-      {super.key,
-      required this.account,
-      required this.onTap,
-      this.accent = communityAccent});
+      {super.key, required this.account, this.onTap, this.accent = communityAccent});
 
   @override
   Widget build(BuildContext context) {
@@ -363,7 +361,7 @@ class XpProgressRow extends StatelessWidget {
           children: [
             Icon(Icons.bolt, size: 18, color: accent),
             const SizedBox(width: 6),
-            Text('今日 $today/$cap',
+            Text(tr('badge_today_prefix') + '$today/$cap',
                 style: const TextStyle(
                     fontWeight: FontWeight.bold, fontSize: 13)),
             const SizedBox(width: 10),
@@ -378,8 +376,10 @@ class XpProgressRow extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
-            const Icon(Icons.chevron_right, size: 18),
+            if (onTap != null) ...[
+              const SizedBox(width: 8),
+              const Icon(Icons.chevron_right, size: 18),
+            ],
           ],
         ),
       ),

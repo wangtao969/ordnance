@@ -68,7 +68,7 @@ class _ReloadingScreenState extends State<ReloadingScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => GlassDialog(
-        title: '⚠ 安全红线',
+        title: tr('reload_safety_title'),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -80,7 +80,7 @@ class _ReloadingScreenState extends State<ReloadingScreen> {
               .toList(),
         ),
         actions: [
-          glassPrimaryButton(ctx, '知道了', onPressed: () async {
+          glassPrimaryButton(ctx, tr('got_it'), onPressed: () async {
             if (saveAck) {
               try {
                 await _prefsChannel.invokeMethod(
@@ -99,7 +99,7 @@ class _ReloadingScreenState extends State<ReloadingScreen> {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final grey = dark ? const Color(0xFF8A8578) : const Color(0xFF9A917F);
     return Scaffold(
-      appBar: SubPageAppBar(title: '复装手册'),
+      appBar: SubPageAppBar(title: tr('reload_manual_title')),
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
@@ -109,7 +109,7 @@ class _ReloadingScreenState extends State<ReloadingScreen> {
               onPressed: () => _showSafetyWarning(saveAck: false),
               icon: const Icon(Icons.warning_amber_outlined,
                   color: Colors.redAccent, size: 18),
-              label: const Text('安全红线（点开查看）',
+              label: Text(tr('reload_safety_entry'),
                   style: TextStyle(color: Colors.redAccent)),
             ),
           ),
@@ -118,7 +118,7 @@ class _ReloadingScreenState extends State<ReloadingScreen> {
               leading: const Icon(Icons.menu_book_outlined),
               title: Text(tr('caliber_atlas')),
               subtitle: Text(
-                  '共 ${caliberInfos.length} 个口径，点进去搜口径、按弹种筛选',
+                  tr('reload_caliber_count_prefix') + '${caliberInfos.length}' + tr('reload_caliber_count_suffix'),
                   style: TextStyle(color: grey, fontSize: 12)),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.push(
@@ -158,8 +158,8 @@ class _ReloadingScreenState extends State<ReloadingScreen> {
           Card(
             child: ListTile(
               leading: const Icon(Icons.build_outlined),
-              title: const Text('复装工具'),
-              subtitle: Text('压机、模具、量具等 ${reloadTools.length} 种',
+              title: Text(tr('reload_tools_title')),
+              subtitle: Text(tr('reload_tools_count_prefix') + '${reloadTools.length}' + tr('reload_tools_count_suffix'),
                   style: TextStyle(color: grey, fontSize: 12)),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.push(
@@ -275,7 +275,7 @@ class _CaliberCatalogScreenState extends State<CaliberCatalogScreen> {
             spacing: 6,
             children: ['全部', '手枪弹', '步枪弹', '马格南', '霰弹']
                 .map((g) => FilterChip(
-                      label: Text(g == '全部' ? g : caliberGroupDisplay(g)),
+                      label: Text(g == '全部' ? tr('all') : caliberGroupDisplay(g)),
                       selected: _group == g,
                       onSelected: (_) => setState(() => _group = g),
                     ))
@@ -571,13 +571,13 @@ class _ReloadWorkbenchScreenState extends State<ReloadWorkbenchScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('先选口径，再选组件、查装药，最后记一条复装记录。',
+          Text(tr('reload_workbench_hint'),
               style: TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             initialValue: _caliber,
-            decoration: const InputDecoration(
-              labelText: '口径 / Caliber',
+            decoration: InputDecoration(
+              labelText: tr('reload_caliber_field'),
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(12))),
             ),
@@ -592,7 +592,7 @@ class _ReloadWorkbenchScreenState extends State<ReloadWorkbenchScreen> {
           ),
           if (caliberEntry != null) ...[
             const SizedBox(height: 16),
-            const Text('手册建议组件',
+            Text(tr('reload_suggested'),
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             _section('Bullet Selection',
@@ -603,37 +603,37 @@ class _ReloadWorkbenchScreenState extends State<ReloadWorkbenchScreen> {
             _section('Primer Selection',
                 caliberEntry.primers.map(primerDisplay).toList(), bronze),
             const SizedBox(height: 8),
-            const Text('手册装药（只收录手册原文，查不到的口径刻意省略）',
+            Text(tr('reload_manual_loads'),
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             if (loads.isEmpty)
-              Text('本口径暂无经核实的公开手册装药数据，请以纸质手册原文为准。',
+              Text(tr('reload_no_manual_data'),
                   style: TextStyle(color: grey)),
             ...loads.map((l) => _loadCard(l)),
           ],
           const SizedBox(height: 16),
           Text(
               _caliber == null
-                  ? '组件库选择（${reloadComponents.length} 条，点一下即选定）'
+                  ? tr('reload_lib_title') + tr('reload_lib_title_open') + '${reloadComponents.length}' + tr('reload_lib_title_mid')
                   : _libShowAll
-                      ? '组件库选择（全部 ${reloadComponents.length} 条，点一下即选定）'
-                      : '组件库选择（仅显示与 $_caliber 相关，${libFiltered.length} 条）',
+                      ? tr('reload_lib_title') + tr('reload_lib_title_open') + tr('reload_lib_title_all') + '${reloadComponents.length}' + tr('reload_lib_title_mid')
+                      : tr('reload_lib_title') + tr('reload_lib_title_open') + tr('reload_lib_title_rel_a') + '$_caliber' + tr('reload_lib_title_rel_b') + '${libFiltered.length}' + tr('reload_lib_title_mid'),
               style: const TextStyle(
                   fontSize: 17, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
           Text(
               _caliber == null
-                  ? '先在顶部选口径，组件库会自动只显示该口径相关的条目；也可搜品牌或型号。'
+                  ? tr('reload_lib_hint_pick')
                   : _libShowAll
-                      ? '已显示全部组件，关掉“仅看本口径”可回到按口径过滤。'
-                      : '只显示与 $_caliber 相关的组件，点一下即选定；想看全部时可关掉“仅看本口径”。',
+                      ? tr('reload_lib_hint_all')
+                      : tr('reload_lib_hint_rel_a') + '$_caliber' + tr('reload_lib_hint_rel_b'),
               style: TextStyle(color: grey, fontSize: 12)),
           if (_caliber != null) ...[
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerLeft,
               child: FilterChip(
-                label: const Text('仅看本口径'),
+                label: Text(tr('reload_only_caliber')),
                 selected: !_libShowAll,
                 onSelected: (v) => setState(() => _libShowAll = !v),
               ),
@@ -653,7 +653,7 @@ class _ReloadWorkbenchScreenState extends State<ReloadWorkbenchScreen> {
           const SizedBox(height: 8),
           TextField(
             decoration: InputDecoration(
-              hintText: '搜品牌或型号，如 H4350、ELD Match',
+              hintText: tr('reload_lib_search_hint'),
               prefixIcon: const Icon(Icons.search),
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24)),
@@ -696,11 +696,11 @@ class _ReloadWorkbenchScreenState extends State<ReloadWorkbenchScreen> {
                 ),
               )),
           if (libMatches.length > 20)
-            Text('还有 ${libMatches.length - 20} 条，输入品牌或型号缩小范围。',
+            Text(tr('reload_lib_more_prefix') + '${libMatches.length - 20}' + tr('reload_lib_more_suffix'),
                 style: TextStyle(color: grey, fontSize: 12)),
           if (libFiltered.isEmpty)
             Text(
-                '本口径在组件库里暂无对应 $_libKind 条目，可用上方“手册建议组件”，或关掉“仅看本口径”看全部。',
+                tr('reload_lib_no_match_prefix') + componentKindDisplay(_libKind) + tr('reload_lib_no_match_suffix'),
                 style: TextStyle(color: grey, fontSize: 12)),
           const SizedBox(height: 16),
           Card(
@@ -712,14 +712,14 @@ class _ReloadWorkbenchScreenState extends State<ReloadWorkbenchScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('已选组件',
+                  Text(tr('reload_picked_title'),
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
-                  Text('Bullet: ${_picked['弹头'] ?? '未选'}'),
-                  Text('Powder: ${_picked['火药'] ?? '未选'}'),
-                  Text('Case: ${_picked['弹壳'] ?? '未选'}'),
-                  Text('Primer: ${_picked['底火'] ?? '未选'}'),
+                  Text('Bullet: ${_picked['弹头'] ?? tr('reload_not_picked')}'),
+                  Text('Powder: ${_picked['火药'] ?? tr('reload_not_picked')}'),
+                  Text('Case: ${_picked['弹壳'] ?? tr('reload_not_picked')}'),
+                  Text('Primer: ${_picked['底火'] ?? tr('reload_not_picked')}'),
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
@@ -736,25 +736,25 @@ class _ReloadWorkbenchScreenState extends State<ReloadWorkbenchScreen> {
                           ),
                         ),
                       ),
-                      child: const Text('把选好的带入复装记录'),
+                      child: Text(tr('reload_carry_btn')),
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text('复装记录也在这个板块里：点进去按 SOP 打勾、填完整并通过放行检测才能保存。',
+                  Text(tr('reload_log_hint'),
                       style: TextStyle(color: grey, fontSize: 12)),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 16),
-          const Text('我的配方（已放行批次，一键复用）',
+          Text(tr('reload_recipes_title'),
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text('点一条配方，口径与组件自动填好，再点“把选好的带入复装记录”；复用只带配方，不带旧批号与旧试射结果，新一批必须重走 SOP、重测。',
+          Text(tr('reload_recipes_hint'),
               style: TextStyle(color: grey, fontSize: 12)),
           const SizedBox(height: 8),
           if (_pastLogs.where((l) => l.released).isEmpty)
-            Text('还没有已放行的批次，放行一条记录后这里会出现它的配方。',
+            Text(tr('reload_no_recipes'),
                 style: TextStyle(color: grey)),
           ...(() {
             final seen = <String>{};
@@ -786,9 +786,7 @@ class _ReloadWorkbenchScreenState extends State<ReloadWorkbenchScreen> {
               }
               final bestLine = best == null
                   ? ''
-                  : '\n实测最好分组：${best.groupSize.toStringAsFixed(1)} 厘米'
-                      '（${best.distance > 0 ? (best.groupSize / (best.distance * 0.02909)).toStringAsFixed(2) : '—'} MOA，'
-                      '${best.distance} 米）';
+                  : '\n' + tr('reload_best_group_prefix') + '${best.groupSize.toStringAsFixed(1)}' + tr('range_unit_cm') + tr('reload_best_group_mid') + '${best.distance > 0 ? (best.groupSize / (best.distance * 0.02909)).toStringAsFixed(2) : '—'}' + tr('reload_best_group_mid2') + '${best.distance}' + tr('range_unit_m') + tr('reload_best_group_suffix');
               return Card(
                   margin: const EdgeInsets.only(bottom: 6),
                   child: ListTile(
@@ -811,17 +809,19 @@ class _ReloadWorkbenchScreenState extends State<ReloadWorkbenchScreen> {
           if (_pastLogs.any((l) => !l.released)) ...[
             const SizedBox(height: 8),
             Text(
-                '未放行批次 ${_pastLogs.where((l) => !l.released).length} 条（含异常停用），在复装记录页里查看，处理完才能放行。',
+                tr('reload_unreleased_prefix') + '${_pastLogs.where((l) => !l.released).length}' + tr('reload_unreleased_suffix'),
                 style: const TextStyle(color: Colors.amber, fontSize: 12)),
           ],
           const SizedBox(height: 16),
-          const Text('手册参考（点开查验）',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text('App 内不附手册全文（版权原因）；点开是出版社官网，具体章节与数据以纸质手册与官网当前数据页为准，在线数据请以官网当前页复核。',
-              style: TextStyle(color: grey, fontSize: 12)),
-          const SizedBox(height: 8),
-          ...manuals.map((m) {
+          ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            title: Text('${tr('reload_manual_ref')} (${manuals.length})',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+            children: [
+              Text(tr('reload_manual_ref_note'),
+                  style: TextStyle(color: grey, fontSize: 12)),
+              const SizedBox(height: 8),
+              ...manuals.map((m) {
             final site = _manualSite(m);
             return Card(
               margin: const EdgeInsets.only(bottom: 6),
@@ -838,7 +838,9 @@ class _ReloadWorkbenchScreenState extends State<ReloadWorkbenchScreen> {
                       },
               ),
             );
-          }),
+              }),
+            ],
+          ),
         ],
       ),
     );
@@ -873,14 +875,14 @@ class _ReloadWorkbenchScreenState extends State<ReloadWorkbenchScreen> {
               Text('${l.bullet} · ${l.powder}',
                   style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
-              _loadRow('起始装药', l.startCharge),
-              _loadRow('最大装药', l.maxCharge),
-              _loadRow('弹长 COL', l.col),
-              _loadRow('底火', l.primer),
-              _loadRow('弹壳', l.brass),
-              if (l.velocity != null) _loadRow('初速', l.velocity!),
-              if (l.pressure != null) _loadRow('膛压', l.pressure!),
-              if (l.manual.isNotEmpty) _loadRow('手册', l.manual),
+              _loadRow(tr('reload_row_start'), l.startCharge),
+              _loadRow(tr('reload_row_max'), l.maxCharge),
+              _loadRow(tr('reload_row_col'), l.col),
+              _loadRow(tr('reload_row_primer'), l.primer),
+              _loadRow(tr('reload_row_brass'), l.brass),
+              if (l.velocity != null) _loadRow(tr('reload_row_velocity'), l.velocity!),
+              if (l.pressure != null) _loadRow(tr('reload_row_pressure'), l.pressure!),
+              if (l.manual.isNotEmpty) _ManualSourceRow(manual: l.manual),
               const SizedBox(height: 4),
               Text('${tr('source_prefix')}${l.source}',
                   style: const TextStyle(color: Colors.grey, fontSize: 12)),
@@ -896,12 +898,12 @@ class _ReloadWorkbenchScreenState extends State<ReloadWorkbenchScreen> {
                         initialVelocityFps: _firstNum(l.velocity),
                         initialPowderGr: _grOf(l.startCharge),
                         initialLabel:
-                            '${l.caliber} · ${l.bullet} · ${l.powder}（起始装药）',
+                            '${l.caliber} · ${l.bullet} · ${l.powder}' + tr('reload_start_charge_suffix'),
                       ),
                     ),
                   ),
                   icon: const Icon(Icons.calculate_outlined, size: 18),
-                  label: const Text('算这发的动能/后坐力'),
+                  label: Text(tr('reload_calc_energy')),
                 ),
               ),
             ],
@@ -935,6 +937,59 @@ class _ReloadWorkbenchScreenState extends State<ReloadWorkbenchScreen> {
       );
 }
 
+/// 装药卡手册来源收起行：默认只显示一行“手册来源”+ 展开箭头，
+/// 点开才显示完整手册引用，免得每张卡都摊一行长引用。
+class _ManualSourceRow extends StatefulWidget {
+  final String manual;
+  const _ManualSourceRow({required this.manual});
+
+  @override
+  State<_ManualSourceRow> createState() => _ManualSourceRowState();
+}
+
+class _ManualSourceRowState extends State<_ManualSourceRow> {
+  var _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 1),
+            child: Row(
+              children: [
+                SizedBox(
+                    width: 72,
+                    child: Text(tr('reload_manual_source'),
+                        style: const TextStyle(color: Colors.grey))),
+                const Spacer(),
+                Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 18,
+                    color: Colors.grey),
+              ],
+            ),
+          ),
+        ),
+        AnimatedCrossFade(
+          firstChild: const SizedBox.shrink(),
+          secondChild: Padding(
+            padding: const EdgeInsets.only(left: 72, top: 2, bottom: 2),
+            child: Text(widget.manual),
+          ),
+          crossFadeState: _expanded
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 200),
+        ),
+      ],
+    );
+  }
+}
+
 /// 口径详情：点三列小卡片进来，尺寸、弹头、售价、适配枪械都在这里。
 class CaliberDetailScreen extends StatelessWidget {
   final CaliberInfo info;
@@ -963,7 +1018,7 @@ class CaliberDetailScreen extends StatelessWidget {
           Text(tr('factory_price'),
               style: TextStyle(fontWeight: FontWeight.bold, color: bronze)),
           const SizedBox(height: 4),
-          Text(info.factoryPrice ?? '暂未收录',
+          Text(info.factoryPrice ?? tr('reload_price_missing'),
               style: TextStyle(color: info.factoryPrice == null ? grey : null)),
           Text(tr('factory_price_note'),
               style: TextStyle(color: grey, fontSize: 12)),

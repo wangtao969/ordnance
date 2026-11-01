@@ -30,3 +30,55 @@ Future<bool> installDownloadedApk(String path) async {
     return false;
   }
 }
+
+/// 系统日历插入 intent（ACTION_INSERT + CalendarContract.Events）：
+/// 跳到用户自己的日历 App 里由用户确认；无日历 App 接 intent 时
+/// 返回 false，调用方显示可读提示。App 不追踪日历事件 ID。
+Future<bool> addCalendarEvent({
+  required String title,
+  required int beginMs,
+  required int endMs,
+  required String description,
+}) async {
+  try {
+    return await _systemChannel.invokeMethod<bool>('addCalendarEvent', {
+          'title': title,
+          'beginMs': beginMs,
+          'endMs': endMs,
+          'description': description,
+        }) ??
+        false;
+  } catch (_) {
+    return false;
+  }
+}
+
+/// 系统闹钟 intent（ACTION_SET_ALARM）：跳到系统时钟 App 预填时间与文案，
+/// 由用户确认；无时钟 App 接 intent 时返回 false，调用方显示可读提示。
+Future<bool> setAlarmClock({
+  required int hour,
+  required int minute,
+  required String message,
+}) async {
+  try {
+    return await _systemChannel.invokeMethod<bool>('setAlarm', {
+          'hour': hour,
+          'minute': minute,
+          'message': message,
+        }) ??
+        false;
+  } catch (_) {
+    return false;
+  }
+}
+
+/// 视频附件系统播放（ACTION_VIEW + FileProvider）：文件不存在或无播放
+/// 应用时返回 false，调用方显示可读提示，不闪退。
+Future<bool> openVideoFile(String path) async {
+  try {
+    return await _systemChannel.invokeMethod<bool>('openVideo', {'path': path}) ??
+        false;
+  } catch (_) {
+    return false;
+  }
+}

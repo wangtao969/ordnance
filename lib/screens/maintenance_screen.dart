@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../i18n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../app_log.dart';
@@ -58,6 +59,19 @@ class MaintenanceScreen extends StatefulWidget {
 
   @override
   State<MaintenanceScreen> createState() => _MaintenanceScreenState();
+}
+
+String _maintTypeLabel(String t) {
+  switch (t) {
+    case '清洁':
+      return tr('maint_type_clean');
+    case '换件':
+      return tr('maint_type_parts');
+    case '检查':
+      return tr('maint_type_check');
+    default:
+      return t;
+  }
 }
 
 class _MaintenanceScreenState extends State<MaintenanceScreen> {
@@ -212,23 +226,23 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
 
   String _roundsLine(MaintenanceRecord r) {
     if (r.snapshotRounds >= 0) {
-      var line = '当时收藏柜累计 ${r.snapshotRounds} 发';
-      if (r.roundsSince >= 0) line += ' · 距上次约 ${r.roundsSince} 发';
+      var line = tr('maint_snapshot_prefix') + '${r.snapshotRounds}' + tr('ammo_rounds_suffix');
+      if (r.roundsSince >= 0) line += tr('maint_since_mid') + '${r.roundsSince}' + tr('maint_since_mid_suffix');
       return line;
     }
-    if (r.roundsSince >= 0) return '距上次保养约 ${r.roundsSince} 发';
-    if (r.roundsAt > 0) return '当时累计约 ${r.roundsAt} 发（旧版记录）';
+    if (r.roundsSince >= 0) return tr('maint_since_prefix') + '${r.roundsSince}' + tr('maint_since_suffix');
+    if (r.roundsAt > 0) return tr('maint_legacy_prefix') + '${r.roundsAt}' + tr('maint_legacy_suffix');
     return '';
   }
 
   String get _detailHint {
     switch (_type) {
       case '换件':
-        return '换了什么零件，如 复进簧';
+        return tr('maint_hint_parts');
       case '检查':
-        return '检查了什么，如 瞄具螺丝是否松动';
+        return tr('maint_hint_check');
       default:
-        return '内容，如 擦拭枪膛、润滑枪机';
+        return tr('maint_hint_default');
     }
   }
 
@@ -252,25 +266,25 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
       groups.putIfAbsent(r.gunName, () => []).add(r);
     }
     return Scaffold(
-      appBar: const SubPageAppBar(title: '保养记录'),
+      appBar: SubPageAppBar(title: tr('maint_title')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('只记你做过的清洁、换件与检查，不教拆解、不教改装；数据只存本机。',
+          Text(tr('maint_note'),
               style: TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 16),
-          const Text('新增记录',
+          Text(tr('maint_add_title'),
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           if (guns.isNotEmpty) ...[
             DropdownButtonFormField<String>(
               initialValue: gunValue,
-              decoration: const InputDecoration(labelText: '枪'),
+              decoration: InputDecoration(labelText: tr('maint_gun_label')),
               items: [
                 for (final g in guns)
                   DropdownMenuItem(value: g.gunName, child: Text(g.gunName)),
-                const DropdownMenuItem(
-                    value: _manualGun, child: Text('其他（手动填枪名）')),
+                DropdownMenuItem(
+                    value: _manualGun, child: Text(tr('maint_other_manual'))),
               ],
               onChanged: (v) {
                 if (v != null) setState(() => _selectedGun = v);
@@ -281,14 +295,14 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
           if (gunValue == _manualGun) ...[
             TextField(
                 controller: _gunCtrl,
-                decoration: const InputDecoration(labelText: '枪名')),
+                decoration: InputDecoration(labelText: tr('maint_gun_name'))),
             const SizedBox(height: 8),
           ],
           InkWell(
             onTap: _pickDate,
             child: InputDecorator(
-              decoration: const InputDecoration(
-                  labelText: '保养日期（点一下可改，默认今天）'),
+              decoration: InputDecoration(
+                  labelText: tr('maint_date_label')),
               child: Text(_date),
             ),
           ),
@@ -297,7 +311,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
             spacing: 6,
             children: ['清洁', '换件', '检查']
                 .map((t) => ChoiceChip(
-                      label: Text(t),
+                      label: Text(_maintTypeLabel(t)),
                       selected: _type == t,
                       onSelected: (_) => setState(() => _type = t),
                     ))
@@ -315,13 +329,13 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('收藏柜累计 ${linked.rounds} 发，不用你填发数。',
+                    Text(tr('maint_linked_prefix') + '${linked.rounds}' + tr('maint_linked_suffix'),
                         style: const TextStyle(fontSize: 13)),
                     const SizedBox(height: 4),
                     Text(
                         priorSnapshot == null
-                            ? '这是这把枪第一次记保养，之后会自动算出距上次保养的发数。'
-                            : '距上次保养约 ${_clampDelta(linked.rounds, priorSnapshot.snapshotRounds)} 发（按收藏柜发数自动算）。',
+                            ? tr('maint_first_note')
+                            : tr('maint_auto_prefix') + '${_clampDelta(linked.rounds, priorSnapshot.snapshotRounds)}' + tr('maint_auto_suffix'),
                         style:
                             const TextStyle(color: Colors.grey, fontSize: 12)),
                   ],
@@ -332,8 +346,8 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
             TextField(
                 controller: _roundsCtrl,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                    labelText: '自上次保养后约打了（发，约数即可，不知道可空）')),
+                decoration: InputDecoration(
+                    labelText: tr('maint_since_input'))),
             const SizedBox(height: 8),
             Wrap(
               spacing: 6,
@@ -345,7 +359,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                 ('约 500 发', '500'),
               ]
                   .map((e) => ChoiceChip(
-                        label: Text(e.$1),
+                        label: Text(e.$1 == '未记' ? tr('maint_quick_none') : tr('maint_quick_prefix') + e.$2 + tr('ammo_rounds_suffix')),
                         selected:
                             e.$2.isNotEmpty && _roundsCtrl.text == e.$2,
                         onSelected: (_) =>
@@ -360,11 +374,11 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                 backgroundColor: const Color(0xFFE86A1C)),
             onPressed: _add,
             child:
-                const Text('记一条', style: TextStyle(color: Colors.white)),
+                Text(tr('maint_add_btn'), style: TextStyle(color: Colors.white)),
           ),
           const SizedBox(height: 20),
           if (_records.isEmpty)
-            const Text('还没有保养记录，在上面填枪名和内容即可记一条。',
+            Text(tr('maint_empty'),
                 style: TextStyle(color: Colors.grey))
           else
             ...groups.entries.map((entry) {
@@ -374,17 +388,17 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
               var sinceLine = '';
               if (current != null && latest.snapshotRounds >= 0) {
                 sinceLine =
-                    ' · 距上次保养后收藏柜又增约 ${_clampDelta(current.rounds, latest.snapshotRounds)} 发';
+                    tr('maint_since_more_prefix') + '${_clampDelta(current.rounds, latest.snapshotRounds)}' + tr('maint_since_more_suffix');
               }
               return Card(
                 child: ExpansionTile(
                   title: Text(entry.key),
                   subtitle: Text(
-                      '上次保养 ${latest.date}${days >= 0 ? '（$days 天前）' : ''} · 共 ${entry.value.length} 条$sinceLine'),
+                      tr('maint_last_prefix') + latest.date + (days >= 0 ? tr('dope_days_ago_prefix') + '$days' + tr('dope_days_ago_suffix') : '') + tr('maint_last_mid') + '${entry.value.length}' + tr('maint_last_suffix') + sinceLine),
                   children: entry.value.map((r) {
                     final line = _roundsLine(r);
                     return ListTile(
-                      title: Text('${r.type} · ${r.detail}'),
+                      title: Text('${_maintTypeLabel(r.type)} · ${r.detail}'),
                       subtitle: Text(
                           line.isEmpty ? r.date : '${r.date} · $line'),
                       trailing: IconButton(

@@ -24,20 +24,20 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
         ? reloadComponents
         : reloadComponents.where((c) => c.kind == _kind).toList();
     return Scaffold(
-      appBar: SubPageAppBar(title: '组件供应商'),
+      appBar: SubPageAppBar(title: tr('suppliers')),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Text('组件供应商 · 共 ${reloadComponents.length} 条',
+            child: Text(tr('suppliers') + ' · ' + tr('suppliers_total_prefix') + '${reloadComponents.length}' + tr('suppliers_total_suffix'),
                 style:
                     const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text(
-                '价格为 2026 年 10 月查到的美国零售参考价，仅供参考；价格与手册装药数据分开展示，不要混淆。',
+                tr('suppliers_price_note'),
                 style: TextStyle(color: grey, fontSize: 12)),
           ),
           SingleChildScrollView(
@@ -74,7 +74,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                   child: ListTile(
                     title: Text('${c.vendor} ${c.name}'),
                     subtitle: Text(
-                        '${c.spec}\n${c.feature}\n参考价：${c.price}'),
+                        '${c.spec}\n${c.feature}\n' + tr('suppliers_price_prefix') + '${c.price}'),
                     trailing:
                         Chip(label: Text(componentKindDisplay(c.kind))),
                     isThreeLine: true,

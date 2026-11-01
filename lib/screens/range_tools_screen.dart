@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../i18n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../tools_units.dart';
@@ -138,18 +139,18 @@ class _RangeToolsScreenState extends State<RangeToolsScreen> {
     return ValueListenableBuilder<String>(
       valueListenable: unitSystemNotifier,
       builder: (_, __, ___) => Scaffold(
-      appBar: const SubPageAppBar(title: '靶场换算'),
+      appBar: SubPageAppBar(title: tr('tools_range_title')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('只算你输入的数，不画弹道、不给装药建议。',
+          Text(tr('range_calc_note'),
               style: TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 12),
           Card(
             child: ListTile(
               leading: const Icon(Icons.book_outlined),
-              title: const Text('归零助手已并入 DOPE数据本'),
-              subtitle: const Text('选枪后在同一页算格数、直接记归零卡'),
+              title: Text(tr('range_dope_moved_title')),
+              subtitle: Text(tr('range_dope_moved_sub')),
               trailing: const Icon(Icons.chevron_right),
               onTap: () async {
                 final gun = await showGunPickerDialog(context);
@@ -166,48 +167,48 @@ class _RangeToolsScreenState extends State<RangeToolsScreen> {
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: Text('已从 ${widget.initialLabel} 带入距离与散布。',
+                child: Text(tr('range_carried_prefix') + (widget.initialLabel ?? '') + tr('range_carried_suffix'),
                     style: const TextStyle(fontSize: 13)),
               ),
             ),
           ],
           const SizedBox(height: 16),
-          const Text('散布换算',
+          Text(tr('range_dispersion_title'),
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           _NumberField(
               controller: _groupCtrl,
-              label: metric ? '散布（厘米，取最远两发中心距）' : '散布（英寸，取最远两发中心距）',
+              label: metric ? tr('range_group_cm_label') : tr('range_group_in_label'),
               onChanged: (_) { setState(() {}); _save(); }),
           if (groupCm > 0 && distM > 0) ...[
             _ResultLine(
-                '散布 = ${_fmt(moaValue)} MOA (${_fmt(mradValue)} Mil)'),
-            Text('1 MOA 在该距离 ≈ ${_fmt(distM * 0.02909)} 厘米；1 Mil ≈ ${_fmt(distM * 0.1)} 厘米。',
+                tr('range_group_eq') + '${_fmt(moaValue)} MOA (${_fmt(mradValue)} Mil)'),
+            Text(tr('range_moa_at_prefix') + '${_fmt(distM * 0.02909)}' + tr('range_moa_at_mid') + '${_fmt(distM * 0.1)}' + tr('range_moa_at_suffix'),
                 style: const TextStyle(color: Colors.grey, fontSize: 12)),
           ],
           const SizedBox(height: 8),
           _NumberField(
               controller: _moaCtrl,
-              label: 'MOA 值（换算成该距离的厘米）',
+              label: tr('range_moa_input_label'),
               onChanged: (_) { setState(() {}); _save(); }),
           if (moa > 0 && distM > 0)
             _ResultLine(
-                '${_fmt(moa)} MOA 在 ${_fmt(distInput)} ${metric ? '米' : '码'}处 ≈ ${_fmt(moaGroupCm)} 厘米'),
+                '${_fmt(moa)}' + tr('range_moa_result_b') + '${_fmt(distInput)}' + (metric ? tr('range_unit_m') : tr('range_unit_yd')) + tr('range_moa_result_c') + '${_fmt(moaGroupCm)}' + tr('range_unit_cm')),
           const SizedBox(height: 20),
-          const Text('速查：每格在各距离是多少厘米',
+          Text(tr('range_quick_title'),
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const Text('以下按米计，不用算，一眼看。',
+          Text(tr('range_quick_note'),
               style: TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 8),
           for (final d in [50.0, 100.0, 200.0, 300.0])
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 2),
               child: Text(
-                  '${_fmt(d, 0)} 米：1 MOA ≈ ${_fmt(d * 0.02909)} 厘米，0.1 Mil = ${_fmt(d * 0.01)} 厘米'),
+                  '${_fmt(d, 0)}' + tr('range_unit_m') + tr('range_quick_row_mid_a') + '${_fmt(d * 0.02909)}' + tr('range_quick_row_mid_b') + '${_fmt(d * 0.01)}' + tr('range_unit_cm')),
             ),
           const SizedBox(height: 8),
-          Text('距离与散布单位跟随工具页单位制（当前：${metric ? '公制' : '英制'}）。',
+          Text(tr('range_unit_footer_prefix') + (metric ? tr('tools_unit_metric') : tr('tools_unit_imperial')) + tr('range_unit_footer_suffix'),
               style: const TextStyle(color: Colors.grey, fontSize: 12)),
         ],
       ),

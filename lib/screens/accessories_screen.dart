@@ -59,7 +59,7 @@ class _AccessoriesScreenState extends State<AccessoriesScreen> {
       return true;
     }).toList();
     return Scaffold(
-      appBar: SubPageAppBar(title: '配件目录'),
+      appBar: SubPageAppBar(title: tr('acc_catalog_title')),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -182,7 +182,7 @@ class _AccessoriesScreenState extends State<AccessoriesScreen> {
                                   fontWeight: FontWeight.bold)),
                           const Spacer(),
                           Text(
-                            cals.isEmpty ? '通用' : cals.join(' · '),
+                            cals.isEmpty ? tr('generic') : cals.join(' · '),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -272,7 +272,7 @@ class _AccessoryDetailScreenState extends State<AccessoryDetailScreen> {
       if (mounted) setState(() => _count += 1);
     } catch (_) {}
     if (mounted)
-      showAppToast(context, '已入库：${accessoryDisplay(widget.item.name)}');
+      showAppToast(context, tr('acc_added_prefix') + accessoryDisplay(widget.item.name));
   }
 
   @override
@@ -320,8 +320,8 @@ class _AccessoryDetailScreenState extends State<AccessoryDetailScreen> {
                     const SizedBox(width: 8),
                     Text(
                         _count > 0
-                            ? '已入库 $_count 件 · 再入库一件'
-                            : '加入我的配件库（入库）',
+                            ? tr('acc_instock_prefix') + '$_count' + tr('acc_instock_mid')
+                            : tr('acc_add'),
                         style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold)),
@@ -331,7 +331,7 @@ class _AccessoryDetailScreenState extends State<AccessoryDetailScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text('入库只记在本机配件库，不登录、不交易；配件库与枪械收藏柜分开记。',
+          Text(tr('acc_note'),
               style: TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 20),
           Text(tr('price'), style: TextStyle(fontWeight: FontWeight.bold, color: bronze)),

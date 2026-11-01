@@ -36,6 +36,7 @@ const List<Knife> knives = [
     steel: '1095 Cro-Van',
     year: '二战时期',
     description: '二战美军陆战队最具代表性的格斗兼多用途刀，至今仍是军刀文化的标志。',
+    descriptionEn: 'The most iconic US Marine Corps fighting and utility knife of World War II, still a symbol of military knife culture today.',
   ),
   Knife(
     name: 'M9 刺刀',
@@ -46,6 +47,7 @@ const List<Knife> knives = [
     steel: '420 系不锈钢',
     year: '1986 年采用',
     description: '美军现役通用刺刀，刀鞘组合可作剪线钳，也可作野战工具使用。',
+    descriptionEn: 'The current US general-issue bayonet; its sheath doubles as wire cutters and it also serves as a field tool.',
   ),
   Knife(
     name: '巴克 110',
@@ -56,6 +58,7 @@ const List<Knife> knives = [
     steel: '420HC',
     year: '1960 年代初（1962 与 1963 两说并存）',
     description: '美国最畅销的经典锁背猎刀之一，奠定了现代折叠猎刀的基本形态。',
+    descriptionEn: 'One of the best-selling classic lockback hunting knives in America, it set the basic form of the modern folding hunter.',
   ),
   Knife(
     name: '费尔贝恩-赛克斯格斗刀',
@@ -66,6 +69,7 @@ const List<Knife> knives = [
     steel: '未确认',
     year: '1941 年设计',
     description: '二战英国突击队与 SAS 的标志性双刃格斗刀，细长匕首造型极具辨识度。',
+    descriptionEn: 'The iconic double-edged fighting knife of British Commandos and the SAS in World War II, instantly recognizable by its slim dagger profile.',
   ),
   Knife(
     name: 'SA80 刺刀',
@@ -76,6 +80,7 @@ const List<Knife> knives = [
     steel: '未确认',
     year: '配 SA80 步枪，生产至 1994 年',
     description: '英军 SA80 步枪系统的制式刺刀，刀鞘组合亦有剪线功能。',
+    descriptionEn: 'The issue bayonet for the British SA80 rifle system; its sheath combination also works as wire cutters.',
   ),
   Knife(
     name: 'Eickhorn KM2000',
@@ -86,6 +91,7 @@ const List<Knife> knives = [
     steel: '1.4110（联邦国防军版）/ Böhler N695（民用·改进版）',
     year: '未确认',
     description: '德国联邦国防军现役多用途军刀，强调野战耐用性与多功能刀鞘。',
+    descriptionEn: 'The current multi-purpose service knife of the German Bundeswehr, built for field durability with a multi-function sheath.',
   ),
   Knife(
     name: '二战空军伞兵重力刀',
@@ -96,6 +102,7 @@ const List<Knife> knives = [
     steel: '未确认（仅见 ROSTFREI 不锈钢字样）',
     year: '1937 年首产',
     description: '德国二战伞兵配刀，原用途是割断缠绕的伞绳而非近战格斗，重力甩出式结构是其最大特征。',
+    descriptionEn: 'A World War II German paratrooper knife made for cutting tangled parachute lines rather than close combat; its gravity-opening mechanism is its signature feature.',
   ),
   Knife(
     name: 'NR-40 侦察兵刀',
@@ -106,6 +113,7 @@ const List<Knife> knives = [
     steel: '未确认（有来源称 U7 碳钢，未经更权威来源核实）',
     year: '1940 年采用',
     description: '苏联二战侦察兵与步兵的代表性格斗刀，木柄、S 形护手是其标志。',
+    descriptionEn: 'The signature fighting knife of Soviet World War II scouts and infantry, marked by its wooden grip and S-shaped guard.',
   ),
   Knife(
     name: 'AKM 刺刀 6X4',
@@ -116,6 +124,7 @@ const List<Knife> knives = [
     steel: '未确认',
     year: '1950 年代末随 AKM 列装',
     description: 'AKM 步枪的制式刺刀，刀鞘组合可作剪线钳，是冷战最常见的刺刀造型之一。',
+    descriptionEn: 'The issue bayonet for the AKM rifle; its sheath combination works as wire cutters, making it one of the most common Cold War bayonet profiles.',
   ),
   Knife(
     name: '95 式多用途刺刀',
@@ -126,6 +135,7 @@ const List<Knife> knives = [
     steel: '未确认',
     year: '1995 年至今服役',
     description: '解放军现役多用途刺刀，可装 QBZ-95/95-1/03、QBS-06、QBZ-191。',
+    descriptionEn: 'The current multi-purpose bayonet of the PLA, fitting the QBZ-95/95-1/03, QBS-06 and QBZ-191.',
   ),
   Knife(
     name: '56 式折叠三棱刺刀',
@@ -136,6 +146,7 @@ const List<Knife> knives = [
     steel: '未确认',
     year: '1956 年起',
     description: '不是可拆卸的刀型刺刀，而是 56 式步枪枪口下方一体折叠的三棱刺刀，是 56 式最具辨识度的特征。',
+    descriptionEn: 'Not a detachable bayonet but an integral folding spike bayonet under the muzzle of the Type 56 rifle — the most recognizable feature of the Type 56.',
   ),
   Knife(
     name: '肥后守',
@@ -146,6 +157,7 @@ const List<Knife> knives = [
     steel: '未确认（因型号而异，有 SK-5、青纸等说法）',
     year: '1896 年起源于兵库县三木市',
     description: '日本最具代表性的无锁摩擦折刀，黄铜柄、简洁结构，至今仍是日本传统刀具的象征。',
+    descriptionEn: 'The most representative Japanese friction folder without a lock, with a brass handle and simple construction, still a symbol of traditional Japanese cutlery.',
   ),
   Knife(
     name: '89 式多用途刺刀',
@@ -156,6 +168,7 @@ const List<Knife> knives = [
     steel: '未确认',
     year: '配 89 式步枪（具体列装年份未确认）',
     description: '日本 89 式步枪的制式多用途刺刀，比 64 式刺刀短约三分之二，带背锯与配合刀鞘的剪线功能。',
+    descriptionEn: 'The multi-purpose bayonet for the Japanese Type 89 rifle, about two-thirds shorter than the Type 64 bayonet, with a back saw and sheath-based wire-cutting function.',
   ),
   Knife(
     name: '莫拉伴侣刀',
@@ -166,6 +179,7 @@ const List<Knife> knives = [
     steel: '12C27 瑞典不锈钢',
     year: '未确认',
     description: '北欧最常见的入门户外直刀，性价比与易磨性使其成为全球野外实用的代名词。',
+    descriptionEn: 'The most common entry-level Nordic outdoor fixed blade; its value and easy sharpening make it a byword for practical field use worldwide.',
   ),
   Knife(
     name: 'Fällkniven F1',
@@ -176,6 +190,7 @@ const List<Knife> knives = [
     steel: 'Elmax（现行版；早期还有层压 CoS、VG10 等版本）',
     year: '瑞典空军飞行员自 1995 年起的官方求生刀',
     description: '瑞典空军官方飞行员求生刀，短粗刃身与高可靠性是其口碑来源。',
+    descriptionEn: 'The official pilot survival knife of the Swedish Air Force; its short, stout blade and high reliability are the source of its reputation.',
   ),
   Knife(
     name: '普科刀',
@@ -186,6 +201,7 @@ const List<Knife> knives = [
     steel: '未确认',
     year: '未确认',
     description: '芬兰国民传统直刀，木柄、无护手、日常与野外通用，是芬兰刀具文化的核心。',
+    descriptionEn: 'The traditional Finnish fixed blade: wooden grip, no guard, for everyday and field use — the core of Finnish knife culture.',
   ),
   Knife(
     name: 'Sissipuukko M95',
@@ -196,6 +212,7 @@ const List<Knife> knives = [
     steel: '涂层碳钢（具体牌号未确认）',
     year: '未确认（设计者服役期间设计）',
     description: '芬兰现代军用/野外普科刀的代表，厚刃身与涂层使其偏向重型野外使用。',
+    descriptionEn: 'The representative modern Finnish military and field puukko, with a thick coated blade leaning toward heavy outdoor use.',
   ),
   Knife(
     name: '奥皮内尔 8 号',
@@ -206,6 +223,7 @@ const List<Knife> knives = [
     steel: 'XC90 碳钢或 Sandvik 12C27 不锈钢（分版本）',
     year: '1890 年设计',
     description: '法国国民折刀，木柄加旋转安全环是其百年不变的标志，全球最常见的传统实用折刀之一。',
+    descriptionEn: 'The French national folding knife: wooden handle plus a rotating safety ring, unchanged for a century and one of the most common traditional utility folders in the world.',
   ),
   Knife(
     name: '拉吉奥尔',
@@ -216,6 +234,7 @@ const List<Knife> knives = [
     steel: '未确认（因型号而异）',
     year: '1829 年设计',
     description: '法国传统折刀通用型，不是单一品牌，蜜蜂标志与纤细刀身是其特征。',
+    descriptionEn: 'A generic pattern of traditional French folding knives rather than a single brand, marked by the bee emblem and a slim blade.',
   ),
   Knife(
     name: 'Extrema Ratio Fulcrum',
@@ -226,6 +245,7 @@ const List<Knife> knives = [
     steel: 'Böhler N690（58HRC）',
     year: '意大利“Nibbio”任务时期在阿富汗大规模配发（具体列装年份未确认）',
     description: '意大利陆军山地部队实验项目为步兵开发的多用途军刀，以坚固性著称，后衍生出可上枪的刺刀版。',
+    descriptionEn: 'A multi-purpose military knife developed for Italian Army mountain troops under an experimental infantry program, known for its ruggedness; a bayonet version followed.',
   ),
   Knife(
     name: '意大利细刺刀',
@@ -236,5 +256,6 @@ const List<Knife> knives = [
     steel: '未确认（因型号与年代而异）',
     year: '细刺匕首源自文艺复兴意大利；马尼亚戈弹簧自动版 20 世纪上半叶成型',
     description: '意大利马尼亚戈刀具镇的代表作，细长针尖刃身加侧开弹簧结构，是收藏界最具标志性的意大利传统折刀之一；本条为通用型录，非单一产品型号。',
+    descriptionEn: 'The signature product of Maniago, Italy: a slim needle-point blade with a side-opening spring mechanism, one of the most iconic traditional Italian folders among collectors. This entry covers the generic pattern, not a single model.',
   ),
 ];

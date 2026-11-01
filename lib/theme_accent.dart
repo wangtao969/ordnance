@@ -19,6 +19,12 @@ const accentPresets = <AccentPreset>[
   AccentPreset('accent_navy', Color(0xFF2E4A6B)),
   AccentPreset('accent_oxblood', Color(0xFF7A2E2E)),
   AccentPreset('accent_slatepurple', Color(0xFF5A5470)),
+  // 2.2.5 新增 5 个预设，总数 10 个。
+  AccentPreset('accent_blue', Color(0xFF2F5DA8)),
+  AccentPreset('accent_green', Color(0xFF3E7A4E)),
+  AccentPreset('accent_grey', Color(0xFF6B7280)),
+  AccentPreset('accent_gold', Color(0xFFB8963E)),
+  AccentPreset('accent_violet', Color(0xFF6B4FA1)),
 ];
 
 final ValueNotifier<Color> accentNotifier = ValueNotifier(defaultAccent);
@@ -39,12 +45,37 @@ Future<void> loadAccent() async {
             const Duration(seconds: 2));
     if (raw == null) return;
     final v = int.tryParse(raw);
-    if (v == null) return;
-    if (accentPresets.any((p) => p.color.toARGB32() == v)) {
-      accentNotifier.value = Color(v);
+    // 2.2.5：接受任意合法不透明 ARGB（含自定义色），不再只认预设；
+    // 非法值回落默认铜色。
+    if (v == null || v < 0xFF000000 || v > 0xFFFFFFFF) {
+      accentNotifier.value = defaultAccent;
+      return;
     }
+    accentNotifier.value = Color(v);
   } catch (_) {}
 }
+
+/// 十六进制颜色解析：接受 RRGGBB 或 #RRGGBB（不透明），以及 AARRGGBB
+///（仅 alpha 为 FF 时接受）；其余一律返回 null，调用方显示错误、不改色。
+Color? parseHexColor(String input) {
+  var s = input.trim();
+  if (s.startsWith('#')) s = s.substring(1);
+  if (s.length == 6) {
+    final v = int.tryParse(s, radix: 16);
+    if (v == null) return null;
+    return Color(0xFF000000 | v);
+  }
+  if (s.length == 8) {
+    final v = int.tryParse(s, radix: 16);
+    if (v == null || v < 0xFF000000) return null;
+    return Color(v);
+  }
+  return null;
+}
+
+/// 当前强调色的 RRGGBB 大写串（不含 # 与 alpha），用于自定义区回显。
+String accentHex(Color c) =>
+    c.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase();
 
 Future<void> saveAccent(Color c) async {
   accentNotifier.value = c;

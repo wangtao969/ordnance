@@ -4,8 +4,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../haptics.dart';
 import '../i18n.dart';
+import '../theme_accent.dart';
 import '../main.dart';
 import '../system_actions.dart';
 import '../widgets/app_top_bar.dart';
@@ -14,11 +14,10 @@ import '../community_store.dart';
 import 'about_screen.dart';
 import 'theme_screen.dart';
 import 'app_log_screen.dart';
-import 'admin_home_screen.dart';
 import 'feedback_screen.dart';
 
 /// 当前版本：每次发版时与 pubspec.yaml 一起改。
-const String appVersion = '2.2.0';
+const String appVersion = '2.2.5';
 
 /// 设置页：主题切换与关于信息。
 class SettingsScreen extends StatelessWidget {
@@ -33,7 +32,7 @@ class SettingsScreen extends StatelessWidget {
       valueListenable: localeNotifier,
       builder: (_, __, ___) => Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: SubPageAppBar(title: '设置'),
+      appBar: SubPageAppBar(title: tr('settings_title')),
       body: ListView(
         padding: EdgeInsets.fromLTRB(
             16, MediaQuery.of(context).padding.top + kToolbarHeight + 16, 16, 16),
@@ -75,7 +74,7 @@ class SettingsScreen extends StatelessWidget {
                           fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(height: 6),
-                Text('内核版本：Flutter 3.47.8',
+                Text(tr('settings_engine_prefix') + 'Flutter 3.47.8',
                     style: TextStyle(color: grey, fontSize: 12)),
               ],
             ),
@@ -89,46 +88,40 @@ class SettingsScreen extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.bug_report_outlined, size: 22),
-            title: const Text('设备日志'),
+            title: Text(tr('app_log_title')),
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const AppLogScreen()),
             ),
           ),
           const SizedBox(height: 24),
-          ValueListenableBuilder<ThemeMode>(
-            valueListenable: themeModeNotifier,
-            builder: (_, mode, __) => ListTile(
-              leading: const Icon(Icons.palette_outlined, size: 22),
-              title: Text(tr('theme')),
-              subtitle: Text(mode == ThemeMode.system
-                  ? tr('theme_system')
-                  : mode == ThemeMode.light
-                      ? tr('theme_light')
-                      : tr('theme_dark')),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ThemeScreen()),
+          ValueListenableBuilder<Color>(
+            valueListenable: accentNotifier,
+            builder: (_, accent, __) => ValueListenableBuilder<ThemeMode>(
+              valueListenable: themeModeNotifier,
+              builder: (_, mode, __) => ListTile(
+                leading: const Icon(Icons.palette_outlined, size: 22),
+                title: Text(tr('appearance')),
+                subtitle: Text(mode == ThemeMode.system
+                    ? tr('theme_system')
+                    : mode == ThemeMode.light
+                        ? tr('theme_light')
+                        : tr('theme_dark')),
+                trailing: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: accent,
+                    border: Border.all(
+                        color: Colors.grey.withValues(alpha: 0.4)),
+                  ),
+                ),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ThemeScreen()),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              const Icon(Icons.vibration_outlined, size: 22),
-              const SizedBox(width: 8),
-              Text(tr('haptics'),
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ValueListenableBuilder<bool>(
-            valueListenable: hapticsEnabledNotifier,
-            builder: (_, enabled, __) => SwitchListTile(
-              title: Text(tr('haptics_title')),
-              value: enabled,
-              onChanged: (v) => hapticsEnabledNotifier.value = v,
             ),
           ),
           const SizedBox(height: 24),
@@ -184,24 +177,24 @@ class SettingsScreen extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.person_add_outlined, size: 22),
-            title: const Text('邀请好友'),
+            title: Text(tr('settings_invite')),
             onTap: () => _showInviteDialog(context),
           ),
           ListTile(
             leading: const Icon(Icons.code, size: 22),
-            title: const Text('GitHub 开源代码'),
+            title: Text(tr('about_github')),
             subtitle: const Text('wangtao969/ordnance'),
             onTap: () async {
               final ok = await openSystemUrl(
                   'https://github.com/wangtao969/ordnance');
               if (!ok && context.mounted) {
-                showAppToast(context, '未能打开浏览器');
+                showAppToast(context, tr('browser_open_failed'));
               }
             },
           ),
           ListTile(
             leading: const Icon(Icons.book_outlined, size: 22),
-            title: const Text('项目手册'),
+            title: Text(tr('about_title')),
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const AboutScreen()),
@@ -217,7 +210,7 @@ class SettingsScreen extends StatelessWidget {
   Future<void> _exportData(BuildContext context) async {
     final me = communityStore.current;
     if (me == null) {
-      showAppToast(context, '请先登录，再导出我的数据');
+      showAppToast(context, tr('settings_login_export'));
       return;
     }
     final data = {
@@ -240,10 +233,10 @@ class SettingsScreen extends StatelessWidget {
       final ok =
           await share.invokeMethod<bool>('shareText', {'text': jsonEncode(data)});
       if (ok != true && context.mounted) {
-        showAppToast(context, '分享未完成，请重试');
+        showAppToast(context, tr('settings_share_failed'));
       }
     } catch (_) {
-      if (context.mounted) showAppToast(context, '导出失败，请重试');
+      if (context.mounted) showAppToast(context, tr('settings_export_failed'));
     }
   }
 
@@ -252,7 +245,7 @@ class SettingsScreen extends StatelessWidget {
   void _showInviteDialog(BuildContext context) {
     final me = communityStore.current;
     if (me == null) {
-      showAppToast(context, '请先登录，再邀请好友');
+      showAppToast(context, tr('settings_login_invite'));
       return;
     }
     final invitedCount =
@@ -261,20 +254,20 @@ class SettingsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (dialogContext) => GlassDialog(
-        title: '邀请好友',
+        title: tr('settings_invite'),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('你的邀请码', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            Text(tr('settings_invite_code'), style: TextStyle(color: Colors.grey, fontSize: 12)),
             const SizedBox(height: 4),
             Text(me.id,
                 style: const TextStyle(
                     fontSize: 28, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            const Text('新用户注册时填写你的邀请码，每成功邀请一位，+100 经验。',
+            Text(tr('settings_invite_note'),
                 style: TextStyle(fontSize: 13)),
             const SizedBox(height: 4),
-            Text('本机已有 $invitedCount 位用户填了你的邀请码',
+            Text(tr('settings_invite_count_prefix') + '$invitedCount' + tr('settings_invite_count_suffix'),
                 style: const TextStyle(color: Colors.grey, fontSize: 12)),
           ],
         ),
@@ -283,14 +276,14 @@ class SettingsScreen extends StatelessWidget {
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: me.id));
               if (dialogContext.mounted) {
-                showAppToast(dialogContext, '邀请码已复制');
+                showAppToast(dialogContext, tr('settings_invite_copied'));
               }
             },
-            child: const Text('复制邀请码'),
+            child: Text(tr('settings_copy_invite')),
           ),
           glassPrimaryButton(
             dialogContext,
-            '分享邀请',
+            tr('settings_share_invite'),
             onPressed: () async {
               await shareChannel.invokeMethod('shareText', {
                 'text':
@@ -413,7 +406,7 @@ class SettingsScreen extends StatelessWidget {
                 Navigator.of(dialogContext).pop();
                 _downloadAndInstall(context, apkUrl ?? link, latest);
               },
-              child: const Text('下载并安装'),
+              child: Text(tr('settings_download_install')),
             ),
           ],
         ),
@@ -463,7 +456,7 @@ class SettingsScreen extends StatelessWidget {
     }
     if (!apkUrl.endsWith('.apk')) {
       if (context.mounted) {
-        showAppToast(context, '未找到安装包，请复制链接到浏览器下载');
+        showAppToast(context, tr('settings_apk_missing'));
       }
       return;
     }
@@ -477,15 +470,15 @@ class SettingsScreen extends StatelessWidget {
     );
     if (path == null) {
       if (context.mounted) {
-        showAppToast(context, '下载失败，请检查网络后重试');
+        showAppToast(context, tr('settings_download_failed'));
       }
       return;
     }
     final ok = await installDownloadedApk(path);
     if (!context.mounted) return;
     showAppToast(context, ok
-            ? '安装器已拉起，请按提示完成安装'
-            : '未能拉起安装：请确认已允许本应用安装未知应用，或复制链接到浏览器下载安装', onTap: ok ? null : () => Clipboard.setData(ClipboardData(text: apkUrl)), actionLabel: ok ? null : '复制链接');
+            ? tr('settings_installer_open')
+            : tr('settings_installer_failed'), onTap: ok ? null : () => Clipboard.setData(ClipboardData(text: apkUrl)), actionLabel: ok ? null : tr('copy_link'));
   }
 
   /// 版本号比较：1.4.0 这种三段数字，返回负数表示 a 更旧。
@@ -556,14 +549,14 @@ class _ClearCacheTileState extends State<_ClearCacheTile> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => GlassDialog(
-        title: '清理缓存',
-        content: const Text('只删临时文件，本机数据不会被删除。'),
+        title: tr('settings_clear_cache'),
+        content: Text(tr('settings_clear_body')),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('取消'),
+            child: Text(tr('cancel')),
           ),
-          glassPrimaryButton(ctx, '清理', popTrue: true),
+          glassPrimaryButton(ctx, tr('settings_clear_action'), popTrue: true),
         ],
       ),
     );
@@ -587,19 +580,19 @@ class _ClearCacheTileState extends State<_ClearCacheTile> {
       _size = 0;
     });
     showAppToast(context,
-        freed > 0 ? '已清理缓存，释放 ${_formatBytes(freed)}' : '缓存已是空的');
+        freed > 0 ? tr('settings_cleared_prefix') + _formatBytes(freed) : tr('settings_cache_empty'));
   }
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       leading: const Icon(Icons.cleaning_services_outlined, size: 22),
-      title: const Text('清理缓存'),
+      title: Text(tr('settings_clear_cache')),
       subtitle: Text(_clearing
-          ? '正在清理…'
+          ? tr('settings_clearing')
           : _size == null
-              ? '正在计算…'
-              : '当前缓存 ${_formatBytes(_size!)}，点按清理'),
+              ? tr('settings_calculating')
+              : tr('settings_cache_now_prefix') + _formatBytes(_size!) + tr('settings_cache_now_suffix')),
       onTap: _clearing ? null : _onTap,
     );
   }
@@ -671,7 +664,7 @@ class _DownloadDialogState extends State<_DownloadDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('正在下载安装包…'),
+                Text(tr('settings_downloading')),
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
                     value: _progress > 0 ? _progress : null),
@@ -725,12 +718,13 @@ class _QuickActionsCardState extends State<_QuickActionsCard> {
                   const Icon(Icons.bolt_outlined,
                       size: 22, color: Color(0xFFE86A1C)),
                   const SizedBox(width: 8),
-                  const Text('快捷操作',
+                  Text(tr('settings_quick'),
                       style: TextStyle(
                           fontSize: 17, fontWeight: FontWeight.bold)),
                   const SizedBox(width: 6),
-                  const Text('Quick Actions',
-                      style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  if (localeNotifier.value == localeHans)
+                    const Text('Quick Actions',
+                        style: TextStyle(color: Colors.grey, fontSize: 12)),
                   const Spacer(),
                   Icon(
                       _expanded
@@ -752,21 +746,10 @@ class _QuickActionsCardState extends State<_QuickActionsCard> {
             const _ClearCacheTile(),
             ListTile(
               leading: const Icon(Icons.file_download_outlined, size: 22),
-              title: const Text('导出我的数据'),
+              title: Text(tr('settings_export')),
               onTap: () => widget.onExportData(context),
             ),
-            if (communityStore.isAdmin || communityStore.isModerator)
-              ListTile(
-                leading: const Icon(Icons.admin_panel_settings_outlined,
-                    size: 22, color: Color(0xFFE86A1C)),
-                title: const Text('后台管理',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const AdminHomeScreen()),
-                ),
-              ),
+
             const SizedBox(height: 8),
           ],
         ],
