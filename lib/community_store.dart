@@ -390,6 +390,9 @@ class CollectionItem {
 
 /// 靶场成绩：分组（弹着散布）、距离、发数，绑定枪种。
 class RangeScore {
+  /// 成绩唯一标识：供靶场行程关联用；新记录创建时生成，
+  /// 旧记录缺失时按枪名+日期+距离+发数+分组派生，保证重读后不变。
+  final String id;
   final String gunName;
   final int distance;
   final int shots;
@@ -410,6 +413,7 @@ class RangeScore {
   final String batchNo;
 
   RangeScore({
+    String? id,
     required this.gunName,
     required this.distance,
     required this.shots,
@@ -424,9 +428,11 @@ class RangeScore {
     this.weather = '',
     this.wind = '',
     this.batchNo = '',
-  }) : date = date ?? DateTime.now();
+  })  : id = id ?? DateTime.now().microsecondsSinceEpoch.toString(),
+        date = date ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
+        'id': id,
         'gunName': gunName,
         'distance': distance,
         'shots': shots,
@@ -443,7 +449,21 @@ class RangeScore {
         'batchNo': batchNo,
       };
 
+  /// 旧记录没有 id 时的稳定派生：同一条成绩重读后 id 不变，
+  /// 已关联它的行程不会断链；两条完全相同的旧成绩会共用一个 id，
+  /// 行程关联时按第一条计，不影响成绩本身的计数与勋章。
+  static String _legacyScoreId(Map<String, dynamic> j) {
+    final raw =
+        '${j['gunName']}|${j['date']}|${j['distance']}|${j['shots']}|${j['groupSize']}';
+    var hash = 0;
+    for (var i = 0; i < raw.length; i++) {
+      hash = (hash * 31 + raw.codeUnitAt(i)) & 0x7fffffff;
+    }
+    return 'legacy_$hash';
+  }
+
   static RangeScore fromJson(Map<String, dynamic> j) => RangeScore(
+        id: j['id'] as String? ?? _legacyScoreId(j),
         gunName: j['gunName'] as String? ?? '',
         distance: j['distance'] as int? ?? 100,
         shots: j['shots'] as int? ?? 5,
@@ -809,7 +829,7 @@ final medalCatalog = <MedalDef>[
       test: (s, a) => a.collection.length >= 5),
   MedalDef(
       id: 'collect_20',
-      name: '初具军火库',
+      name: '初具枪柜',
       desc: '收藏柜登记 20 把枪',
       group: '收藏',
       rarity: 'SR',

@@ -8,6 +8,7 @@ import '../models.dart';
 import '../widgets/category_silhouette.dart';
 import '../widgets/app_top_bar.dart';
 import 'community_collection_screen.dart';
+import 'gun_cabinet_screen.dart';
 import '../news_data.dart';
 import 'news_screen.dart';
 import 'community_tasks_screen.dart';
@@ -51,7 +52,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
     final todayGun = guns[
         DateTime.now().difference(DateTime(2020, 1, 1)).inDays % guns.length];
     final myGuns = communityStore.current?.collection
-            .where((c) => c.kind == 'gun')
+            .where((c) => c.kind == 'gun' && c.status == 'owned')
             .toList() ??
         [];
     final knifeResults = q.isEmpty
@@ -132,7 +133,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                   ),
                 ),
               ),
-            // 今日一枪 + 我的军火库前置：搜索时隐藏，平时放在资讯卡下方。
+            // 今日一枪 + 我的枪柜前置：搜索时隐藏，平时放在资讯卡下方。
             if (_query.isEmpty)
               Card(
                 shape: RoundedRectangleBorder(
@@ -203,7 +204,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                     children: [
                       Row(
                         children: [
-                          const Text('我的军火库',
+                          const Text('我的枪柜',
                               style: TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 14)),
                           const Spacer(),
@@ -214,7 +215,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                 context,
                                 MaterialPageRoute(
                                     builder: (_) =>
-                                        const CommunityCollectionScreen()),
+                                        const GunCabinetScreen()),
                               );
                             },
                             child: Text('查看全部',

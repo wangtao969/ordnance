@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import '../i18n.dart';
 import '../theme_accent.dart';
 import '../tools_units.dart';
 import '../widgets/app_top_bar.dart';
 import 'accessories_screen.dart';
 import 'ammo_inventory_screen.dart';
+import 'chrono_screen.dart';
+import 'learn_screen.dart';
 import 'load_tools_screen.dart';
 import 'maintenance_screen.dart';
 import 'range_tools_screen.dart';
+import 'range_trip_screen.dart';
 import 'reload_cost_screen.dart';
 import 'gun_picker_dialog.dart';
 import 'dope_screen.dart';
@@ -154,6 +158,33 @@ class _ToolsScreenState extends State<ToolsScreen> {
                 MaterialPageRoute(builder: (_) => DopeScreen(gun: gun)),
               );
             },
+          ),
+          _ToolTile(
+            icon: Icons.speed_outlined,
+            title: tr('tool_chrono'),
+            subtitle: tr('tool_chrono_sub'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ChronoScreen()),
+            ),
+          ),
+          _ToolTile(
+            icon: Icons.trip_origin_outlined,
+            title: tr('tool_trip'),
+            subtitle: tr('tool_trip_sub'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const RangeTripScreen()),
+            ),
+          ),
+          _ToolTile(
+            icon: Icons.school_outlined,
+            title: tr('tool_learn'),
+            subtitle: tr('tool_learn_sub'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const LearnScreen()),
+            ),
           ),
           _ToolTile(
             icon: Icons.attach_money_outlined,
