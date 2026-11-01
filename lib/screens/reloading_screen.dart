@@ -7,6 +7,8 @@ import '../english_terms.dart';
 import '../haptics.dart';
 import '../i18n.dart';
 import '../models.dart';
+import '../bullet_profiles.dart';
+import '../widgets/bullet_profile_card.dart';
 import '../system_actions.dart';
 import '../community_store.dart';
 import '../widgets/app_top_bar.dart';
@@ -116,7 +118,7 @@ class _ReloadingScreenState extends State<ReloadingScreen> {
           Card(
             child: ListTile(
               leading: const Icon(Icons.menu_book_outlined),
-              title: Text(tr('caliber_atlas')),
+              title: Text(tr('bullet_catalog')),
               subtitle: Text(
                   tr('reload_caliber_count_prefix') + '${caliberInfos.length}' + tr('reload_caliber_count_suffix'),
                   style: TextStyle(color: grey, fontSize: 12)),
@@ -236,7 +238,7 @@ class _CaliberCatalogScreenState extends State<CaliberCatalogScreen> {
           bulletDisplay(b).toLowerCase().contains(q));
     }).toList();
     return Scaffold(
-      appBar: SubPageAppBar(title: tr('caliber_atlas')),
+      appBar: SubPageAppBar(title: tr('bullet_catalog')),
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
@@ -1033,6 +1035,10 @@ class CaliberDetailScreen extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                 )),
           ],
+          if (bulletProfilesByCaliber(info.caliber).isNotEmpty)
+            BulletProfileCard(
+              profiles: bulletProfilesByCaliber(info.caliber),
+            ),
           const SizedBox(height: 16),
           Text(fitGunsText(info.fitGuns.length),
               style: TextStyle(fontWeight: FontWeight.bold, color: bronze)),

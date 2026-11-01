@@ -156,6 +156,36 @@ class _ZeroAssistantCardState extends State<ZeroAssistantCard> {
           children: [
             Text(tr('zero_title'),
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+            // 第 7 项：实时换算条（输入区上方）——偏移量换算 MOA/密位
+            // 与调节格数，随输入实时变；公式与原靶场换算页一致
+            // （1 MOA ≈ 距离米 × 0.02909 厘米，1 密位 = 距离米 × 0.1 厘米）。
+            if (distM > 0 && (hDev > 0 || vDev > 0)) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE86A1C).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(tr('dope_convert_title'),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 13)),
+                    if (hDev > 0)
+                      Text(
+                          '${tr('zero_h_offset_title')} ${_fmt(hDev)} cm = ${_fmt(hDev / (distM * 0.02909))} MOA (${_fmt(hDev / (distM * 0.1))} Mil) · ${dirLabel(hTurn)}$hRounded${tr('dope_clicks_suffix')}',
+                          style: const TextStyle(fontSize: 13)),
+                    if (vDev > 0)
+                      Text(
+                          '${tr('zero_v_offset_title')} ${_fmt(vDev)} cm = ${_fmt(vDev / (distM * 0.02909))} MOA (${_fmt(vDev / (distM * 0.1))} Mil) · ${dirLabel(vTurn)}$vRounded${tr('dope_clicks_suffix')}',
+                          style: const TextStyle(fontSize: 13)),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             numberField(
                 _distCtrl, metric ? tr('zero_dist_m') : tr('zero_dist_yd')),

@@ -1,7 +1,7 @@
 name: firearms_catalog
 description: Ordnance 枪械图鉴
 publish_to: 'none'
-version: 2.2.5+45
+version: 2.3.0+46
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

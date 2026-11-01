@@ -11,6 +11,12 @@ import 'load_tools_screen.dart';
 import 'reload_cost_screen.dart';
 import '../widgets/glass_dialog.dart';
 import '../i18n.dart';
+import '../weather_api.dart';
+import '../sensors_api.dart';
+import '../bullet_profiles.dart';
+import '../english_terms.dart';
+import '../reload_cost.dart';
+import '../widgets/bullet_profile_card.dart';
 
 /// 复装记录：按 SOP 一步步打勾执行，并记下每次复装的实际参数。
 /// 记录经 gunsmap/prefs 存本机（key reload_log_v1），重启不丢；
@@ -33,6 +39,8 @@ class ReloadLogEntry {
   final String firearm;
   final String lot;
   final String weather;
+  // 是否已扣过组件库存（第 5 项）：扣过后不再显示扣库存按钮，防重复扣。
+  bool deducted;
   // 放行标记：只有通过完整性与 SOP 检测的记录才会保存，旧记录默认已放行。
   final bool released;
   // 批次号：保存时自动编（日期-口径-当日序号），同一批弹的唯一标识。
@@ -56,6 +64,7 @@ class ReloadLogEntry {
     this.firearm = '',
     this.lot = '',
     this.weather = '',
+    this.deducted = false,
     this.released = true,
     this.batchNo = '',
     this.pressure = '',
@@ -78,6 +87,7 @@ class ReloadLogEntry {
         'firearm': firearm,
         'lot': lot,
         'weather': weather,
+        'deducted': deducted,
         'released': released,
         'batchNo': batchNo,
         'pressure': pressure,
@@ -100,10 +110,23 @@ class ReloadLogEntry {
         firearm: j['firearm'] as String? ?? '',
         lot: j['lot'] as String? ?? '',
         weather: j['weather'] as String? ?? '',
+        deducted: j['deducted'] as bool? ?? false,
         released: j['released'] as bool? ?? true,
         batchNo: j['batchNo'] as String? ?? '',
         pressure: j['pressure'] as String? ?? '',
       );
+}
+
+/// 扣库存预览行（第 5 项②）：品类、记录里的组件名、扣量、匹配到的
+/// 库存条目（无匹配为 null，不扣）。
+class _DeductLine {
+  final String kind;
+  final String name;
+  final int amount;
+  final String amountLabel;
+  final Map<String, dynamic>? item;
+  const _DeductLine(this.kind, this.name, this.amount, this.amountLabel,
+      this.item);
 }
 
 class ReloadLogScreen extends StatefulWidget {
@@ -193,6 +216,9 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
   ];
   final Set<String> _pressure = {};
   int _scaleChecks = 0;
+  // 天气快照获取失败时才显示手动备用框：平时只自动拉取，不再手动填。
+  bool _weatherFailed = false;
+  bool _weatherLoading = false;
 
   @override
   void initState() {
@@ -212,6 +238,121 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
     }
     if (widget.initialCaliber != null) _caliber = widget.initialCaliber;
     _load();
+    _fetchWeatherSnapshot();
+  }
+
+  /// 天气区：授权后自动拉取当前位置 Open-Meteo 快照，写入天气字段，
+  /// 随复装记录保存；失败时只给提示并露出手动备用框，不卡保存门。
+  Future<void> _fetchWeatherSnapshot() async {
+    if (_weatherLoading) return;
+    setState(() => _weatherLoading = true);
+    try {
+      final ok = await requestLocationPermission();
+      if (!mounted) return;
+      if (!ok) {
+        setState(() => _weatherFailed = true);
+        showAppToast(context, tr('compose_location_denied'));
+        return;
+      }
+      final pos = await getGpsPosition();
+      if (!mounted) return;
+      if (pos.value == null) {
+        setState(() => _weatherFailed = true);
+        showAppToast(context, tr('compose_location_failed'));
+        return;
+      }
+      final w = await fetchWeather(
+          pos.value!.latitude, pos.value!.longitude);
+      if (!mounted) return;
+      setState(() {
+        _weatherCtrl.text = buildWeatherSnapshot(w,
+            '${pos.value!.latitude.toStringAsFixed(5)}, ${pos.value!.longitude.toStringAsFixed(5)}');
+        _weatherFailed = false;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() => _weatherFailed = true);
+        showAppToast(context, tr('reload_weather_failed'));
+      }
+    } finally {
+      if (mounted) setState(() => _weatherLoading = false);
+    }
+  }
+
+  /// 机身气压计读数追加到快照后（标注来源，不覆盖 Open-Meteo 快照）。
+  Future<void> _appendBarometer() async {
+    final r = await getPressureHpa();
+    if (!mounted) return;
+    if (r.value == null) {
+      showAppToast(context, tr('reload_pressure_failed'));
+      return;
+    }
+    final line = '${tr('reload_pressure')} ${r.value!.toStringAsFixed(1)} hPa';
+    setState(() {
+      _weatherCtrl.text = _weatherCtrl.text.isEmpty
+          ? line
+          : '${_weatherCtrl.text}\n$line';
+    });
+  }
+
+  /// 天气区：快照只读展示 + 获取/刷新 + 气压计；获取失败时露手动备用框。
+  Widget _buildWeatherZone() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.4)),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            _weatherCtrl.text.isEmpty
+                ? tr('reload_weather_empty')
+                : _weatherCtrl.text,
+            style: TextStyle(
+                color: _weatherCtrl.text.isEmpty ? Colors.grey : null),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            OutlinedButton(
+              onPressed: _weatherLoading ? null : _fetchWeatherSnapshot,
+              child: Text(_weatherCtrl.text.isEmpty
+                  ? tr('reload_weather_fetch')
+                  : tr('reload_weather_refresh')),
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton(
+              onPressed: _appendBarometer,
+              child: Text(tr('reload_pressure')),
+            ),
+            if (_weatherLoading) ...[
+              const SizedBox(width: 8),
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ],
+          ],
+        ),
+        if (_weatherFailed) ...[
+          const SizedBox(height: 8),
+          TextField(
+            controller: _weatherCtrl,
+            decoration: InputDecoration(
+              labelText: tr('log_weather_field'),
+              hintText: tr('reload_weather_manual_hint'),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12))),
+            ),
+          ),
+        ],
+      ],
+    );
   }
 
   Future<void> _load() async {
@@ -408,30 +549,29 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
 
   void _insertEntry({required bool released}) {
     final savedCaliber = _caliber;
+    final entry = ReloadLogEntry(
+      date: _today(),
+      caliber: _caliber!,
+      bullet: _bulletCtrl.text.trim(),
+      powder: _powderCtrl.text.trim(),
+      charge: _chargeCtrl.text.trim(),
+      col: _colCtrl.text.trim(),
+      rounds: _roundsCtrl.text.trim(),
+      note: _noteCtrl.text.trim(),
+      primer: _primerCtrl.text.trim(),
+      caseBrand: _caseBrandCtrl.text.trim(),
+      caseTimes: _caseTimesCtrl.text.trim(),
+      velocity: _velocityCtrl.text.trim(),
+      group: _groupCtrl.text.trim(),
+      firearm: _firearmCtrl.text.trim(),
+      lot: _lotCtrl.text.trim(),
+      weather: _weatherCtrl.text.trim(),
+      released: released,
+      batchNo: _batchNo(),
+      pressure: _pressure.join('、'),
+    );
     setState(() {
-      _logs.insert(
-          0,
-          ReloadLogEntry(
-            date: _today(),
-            caliber: _caliber!,
-            bullet: _bulletCtrl.text.trim(),
-            powder: _powderCtrl.text.trim(),
-            charge: _chargeCtrl.text.trim(),
-            col: _colCtrl.text.trim(),
-            rounds: _roundsCtrl.text.trim(),
-            note: _noteCtrl.text.trim(),
-            primer: _primerCtrl.text.trim(),
-            caseBrand: _caseBrandCtrl.text.trim(),
-            caseTimes: _caseTimesCtrl.text.trim(),
-            velocity: _velocityCtrl.text.trim(),
-            group: _groupCtrl.text.trim(),
-            firearm: _firearmCtrl.text.trim(),
-            lot: _lotCtrl.text.trim(),
-            weather: _weatherCtrl.text.trim(),
-            released: released,
-            batchNo: _batchNo(),
-            pressure: _pressure.join('、'),
-          ));
+      _logs.insert(0, entry);
       _save();
       _clearForm();
     });
@@ -441,11 +581,87 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
         'value': savedCaliber,
       });
     }
+    // 第 5 项②：放行保存后立即给一次扣库存入口（卡片上也可再点）。
+    if (released && mounted) _deductDialog(entry);
+  }
+
+  /// 配方差异确认（第 5 项①）：只列变化项，保存前让用户看到
+  /// 与上次的差异；SOP 与手册对照硬门不受影响（仍须重走放行）。
+  Future<bool> _confirmRecipeDiff(
+    Map<String, String> current,
+    Map<String, String> next,
+  ) async {
+    final changed = <String>[];
+    next.forEach((label, value) {
+      final cur = current[label] ?? '';
+      if (cur != value) {
+        changed.add(
+            '$label: ${cur.isEmpty ? tr('log_recipe_diff_empty') : cur} → ${value.isEmpty ? tr('log_recipe_diff_empty') : value}');
+      }
+    });
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('log_recipe_diff_title')),
+        content: changed.isEmpty
+            ? Text(tr('log_recipe_diff_none'))
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: changed
+                    .map((s) => Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(s, style: const TextStyle(fontSize: 13)),
+                        ))
+                    .toList(),
+              ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(tr('cancel'))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(tr('confirm'))),
+        ],
+      ),
+    );
+    return ok == true;
+  }
+
+  Map<String, String> _recipeOf(ReloadLogEntry l) => {
+        tr('log_field_bullet'): l.bullet,
+        tr('log_field_powder'): l.powder,
+        tr('log_field_charge'): l.charge,
+        tr('log_field_col'): l.col,
+        tr('log_field_primer'): l.primer,
+        tr('log_field_case_brand'): l.caseBrand,
+        tr('log_field_case_times'): l.caseTimes,
+      };
+
+  Map<String, String> _currentRecipe() => {
+        tr('log_field_bullet'): _bulletCtrl.text.trim(),
+        tr('log_field_powder'): _powderCtrl.text.trim(),
+        tr('log_field_charge'): _chargeCtrl.text.trim(),
+        tr('log_field_col'): _colCtrl.text.trim(),
+        tr('log_field_primer'): _primerCtrl.text.trim(),
+        tr('log_field_case_brand'): _caseBrandCtrl.text.trim(),
+        tr('log_field_case_times'): _caseTimesCtrl.text.trim(),
+      };
+
+  void _applyRecipe(ReloadLogEntry l) {
+    _bulletCtrl.text = l.bullet;
+    _powderCtrl.text = l.powder;
+    _chargeCtrl.text = l.charge;
+    _colCtrl.text = l.col;
+    _primerCtrl.text = l.primer;
+    _caseBrandCtrl.text = l.caseBrand;
+    _caseTimesCtrl.text = l.caseTimes;
   }
 
   /// 沿用上次同口径配方：只带配方（弹头、火药、装药、弹长、底火、
   /// 弹壳品牌与次数），不带试射结果、批号、压力与 SOP，仍须重走放行。
-  void _reuseLastCaliberRecipe() {
+  /// 带入前先弹差异确认（第 5 项①）。
+  Future<void> _reuseLastCaliberRecipe() async {
     if (_caliber == null) {
       showAppToast(context, tr('log_pick_caliber_first'));
       return;
@@ -461,16 +677,178 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
       showAppToast(context, tr('log_no_released_caliber'));
       return;
     }
-    setState(() {
-      _bulletCtrl.text = last!.bullet;
-      _powderCtrl.text = last.powder;
-      _chargeCtrl.text = last.charge;
-      _colCtrl.text = last.col;
-      _primerCtrl.text = last.primer;
-      _caseBrandCtrl.text = last.caseBrand;
-      _caseTimesCtrl.text = last.caseTimes;
-    });
+    final target = last;
+    if (!await _confirmRecipeDiff(_currentRecipe(), _recipeOf(target))) return;
+    setState(() => _applyRecipe(target));
     showAppToast(context, tr('log_recipe_carried'));
+  }
+
+  /// 从组件库选（第 5 项③，复用选枪器模式）：搜名称/规格，
+  /// 点一下填入名称；数据库里没有的仍可手动填写。
+  Future<void> _pickComponent(
+      String kind, TextEditingController ctrl) async {
+    final items = reloadComponents.where((c) => c.kind == kind).toList();
+    var q = '';
+    final picked = await showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) {
+          final filtered = q.isEmpty
+              ? items
+              : items
+                  .where((c) =>
+                      '${c.vendor} ${c.name} ${c.spec}'
+                          .toLowerCase()
+                          .contains(q.toLowerCase()))
+                  .toList();
+          return AlertDialog(
+            title: Text(componentKindDisplay(kind)),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    decoration: InputDecoration(
+                        labelText: tr('log_pick_search')),
+                    onChanged: (v) => setD(() => q = v),
+                  ),
+                  const SizedBox(height: 8),
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: filtered.length,
+                      itemBuilder: (_, i) {
+                        final c = filtered[i];
+                        return ListTile(
+                          title: Text('${c.vendor} ${c.name}'),
+                          subtitle: Text('${c.spec}\n${c.price}'),
+                          isThreeLine: true,
+                          onTap: () => Navigator.pop(ctx, c.name),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(tr('cancel'))),
+            ],
+          );
+        },
+      ),
+    );
+    if (picked != null) setState(() => ctrl.text = picked);
+  }
+
+  Widget _pickBtn(String kind, TextEditingController ctrl) => IconButton(
+        icon: const Icon(Icons.search_outlined, size: 20),
+        tooltip: tr('log_pick_component'),
+        onPressed: () => _pickComponent(kind, ctrl),
+      );
+
+  /// 一键扣库存（第 5 项②）：按批量发数扣减弹头/火药/弹壳/底火
+  /// 库存条目（库存页 kind 为对应品类的条目），走 ammo_movements；
+  /// 火药按发数 × 装药量（格令）扣。先弹预览确认，无对应库存的
+  /// 项不扣；扣过后卡片不再显示按钮，防重复扣。
+  Future<void> _deductDialog(ReloadLogEntry l) async {
+    final rounds = int.tryParse(l.rounds) ?? 0;
+    if (rounds <= 0) {
+      showAppToast(context, tr('log_deduct_no_rounds'));
+      return;
+    }
+    final charge = double.tryParse(l.charge) ?? 0;
+    final stock = await loadStockMaps();
+    Map<String, dynamic>? match(String kind, String name) {
+      for (final m in stock) {
+        if (m['kind'] == kind && (m['name'] as String? ?? '') == name) {
+          return m;
+        }
+      }
+      for (final m in stock) {
+        final n = m['name'] as String? ?? '';
+        if (m['kind'] == kind &&
+            n.isNotEmpty &&
+            (name.contains(n) || n.contains(name))) {
+          return m;
+        }
+      }
+      return null;
+    }
+
+    final powderAmount = (rounds * charge).round();
+    final lines = <_DeductLine>[
+      _DeductLine('弹头', l.bullet, rounds, '$rounds',
+          match('弹头', l.bullet)),
+      _DeductLine('火药', l.powder, powderAmount, '$powderAmount gr',
+          match('火药', l.powder)),
+      _DeductLine('底火', l.primer, rounds, '$rounds',
+          match('底火', l.primer)),
+      _DeductLine('弹壳', l.caseBrand, rounds, '$rounds',
+          match('弹壳', l.caseBrand)),
+    ];
+    if (!mounted) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('log_deduct_title')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: lines
+              .map((ln) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '${componentKindDisplay(ln.kind)} ${ln.name}: ' +
+                          (ln.item == null
+                              ? tr('log_deduct_no_stock')
+                              : tr('log_deduct_line_prefix') +
+                                  ln.amountLabel +
+                                  tr('log_deduct_line_suffix')),
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ))
+              .toList(),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(tr('cancel'))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(tr('confirm'))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    var applied = false;
+    for (final ln in lines) {
+      final m = ln.item;
+      if (m == null || ln.amount <= 0) continue;
+      final old = (m['quantity'] as num?)?.toInt() ?? 0;
+      final next = (old - ln.amount).clamp(0, 100000000);
+      m['quantity'] = next;
+      final actual = old - next;
+      if (actual > 0) {
+        await addStockMovement(
+          date: _today(),
+          name: m['name'] as String? ?? ln.name,
+          caliber: l.caliber,
+          delta: -actual,
+          reason: '复装消耗',
+        );
+        applied = true;
+      }
+    }
+    if (applied) {
+      await saveStockMaps(stock);
+      setState(() => l.deducted = true);
+      _save();
+      showAppToast(context, tr('log_deduct_applied'));
+    }
   }
 
   /// 语音备注：只把识别文本追加为备注草稿，绝不填装药量、COL、
@@ -527,17 +905,12 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
 
   /// 复用配方：把一条已放行记录的配方与组件载入表单，SOP 与压力
   /// 迹象清零重走，批号在保存时重新编，不沿用旧批号与旧试射结果。
-  void _reuseRecipe(ReloadLogEntry l) {
+  Future<void> _reuseRecipe(ReloadLogEntry l) async {
+    if (!await _confirmRecipeDiff(_currentRecipe(), _recipeOf(l))) return;
     setState(() {
       _caliber = l.caliber;
-      _bulletCtrl.text = l.bullet;
-      _powderCtrl.text = l.powder;
-      _chargeCtrl.text = l.charge;
-      _colCtrl.text = l.col;
+      _applyRecipe(l);
       _roundsCtrl.text = l.rounds;
-      _primerCtrl.text = l.primer;
-      _caseBrandCtrl.text = l.caseBrand;
-      _caseTimesCtrl.text = l.caseTimes;
       _lotCtrl.text = l.lot;
       _velocityCtrl.text = '';
       _groupCtrl.text = '';
@@ -755,6 +1128,13 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
           Text('四步填完：配方 → 组件 → 试射 → 放行检测。带 * 的必须填完整，备注选填；弹头、火药、底火、弹壳、枪械边输边从数据库里搜，点一下即填入，数据库里没有的也可手动填写。Complete in four steps: Recipe → Components → Test Results → Release Check. Fields marked * are required; Notes are optional.',
               style: TextStyle(color: grey, fontSize: 12)),
           const SizedBox(height: 12),
+          _LoadConvertStrip(
+            bulletCtrl: _bulletCtrl,
+            chargeCtrl: _chargeCtrl,
+            colCtrl: _colCtrl,
+            velocityCtrl: _velocityCtrl,
+            firearmCtrl: _firearmCtrl,
+          ),
           Text(tr('log_section_recipe'), style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Row(
@@ -785,9 +1165,27 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          _SuggestField(controller: _bulletCtrl, label: tr('log_bullet_field'), kind: '弹头'),
+          Row(
+            children: [
+              Expanded(
+                child: _SuggestField(controller: _bulletCtrl, label: tr('log_bullet_field'), kind: '弹头'),
+              ),
+              _pickBtn('弹头', _bulletCtrl),
+            ],
+          ),
+          _BulletProfileZone(
+            bulletCtrl: _bulletCtrl,
+            caliber: _caliber,
+          ),
           const SizedBox(height: 8),
-          _SuggestField(controller: _powderCtrl, label: tr('log_powder_field'), kind: '火药'),
+          Row(
+            children: [
+              Expanded(
+                child: _SuggestField(controller: _powderCtrl, label: tr('log_powder_field'), kind: '火药'),
+              ),
+              _pickBtn('火药', _powderCtrl),
+            ],
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -849,7 +1247,14 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
           const SizedBox(height: 16),
           Text(tr('log_section_components'), style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          _SuggestField(controller: _primerCtrl, label: tr('log_primer_field'), kind: '底火'),
+          Row(
+            children: [
+              Expanded(
+                child: _SuggestField(controller: _primerCtrl, label: tr('log_primer_field'), kind: '底火'),
+              ),
+              _pickBtn('底火', _primerCtrl),
+            ],
+          ),
           const SizedBox(height: 8),
           TextField(
             controller: _lotCtrl,
@@ -862,7 +1267,14 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
           Row(
             children: [
               Expanded(
-                child: _SuggestField(controller: _caseBrandCtrl, label: tr('log_case_brand_field'), kind: '弹壳'),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _SuggestField(controller: _caseBrandCtrl, label: tr('log_case_brand_field'), kind: '弹壳'),
+                    ),
+                    _pickBtn('弹壳', _caseBrandCtrl),
+                  ],
+                ),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -913,24 +1325,7 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          TextField(
-            controller: _weatherCtrl,
-            decoration: InputDecoration(
-              labelText: tr('log_weather_field'),
-              border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            children: ['晴', '阴', '雨', '雪', '室内']
-                .map((w) => ActionChip(
-                      label: Text(_weatherLabel(w)),
-                      onPressed: () =>
-                          setState(() => _weatherCtrl.text = w),
-                    ))
-                .toList(),
-          ),
+          _buildWeatherZone(),
           const SizedBox(height: 8),
           Text(tr('log_section_pressure'),
               style: TextStyle(fontWeight: FontWeight.bold)),
@@ -1118,6 +1513,14 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                               ),
                             ),
                           ),
+                          if (l.released && !l.deducted)
+                            IconButton(
+                              icon: const Icon(
+                                  Icons.remove_circle_outline,
+                                  size: 20),
+                              tooltip: tr('log_deduct_btn'),
+                              onPressed: () => _deductDialog(l),
+                            ),
                           IconButton(
                             icon: const Icon(Icons.delete_outline, size: 20),
                             onPressed: () {
@@ -1142,6 +1545,37 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                       if (l.lot.isNotEmpty) Text(tr('log_row_lot') + l.lot),
                       if (l.caseBrand.isNotEmpty)
                         Text(tr('log_row_case') + l.caseBrand + (l.caseTimes.isNotEmpty ? tr('log_row_case_times_prefix') + l.caseTimes + tr('log_row_case_times_suffix') : '')),
+                      Builder(builder: (_) {
+                        final cost = costPerRound(
+                          bullet: l.bullet,
+                          powder: l.powder,
+                          chargeGr: double.tryParse(l.charge),
+                          primer: l.primer,
+                          caseBrand: l.caseBrand,
+                          caseTimes: int.tryParse(l.caseTimes),
+                        );
+                        String part(String kind, double? v) =>
+                            '${componentKindDisplay(kind)} ${v == null ? '—' : fmtCost(v)}';
+                        return Text(
+                          tr('log_cost_per_round') +
+                              part('弹头', cost.bullet) +
+                              ' · ' +
+                              part('火药', cost.powder) +
+                              ' · ' +
+                              part('底火', cost.primer) +
+                              ' · ' +
+                              part('弹壳', cost.kase) +
+                              ' ｜ ' +
+                              (cost.complete
+                                  ? tr('log_cost_total') +
+                                      fmtCost(cost.knownSum)
+                                  : tr('log_cost_missing_note')),
+                          style: const TextStyle(fontSize: 13),
+                        );
+                      }),
+                      if (l.deducted)
+                        Text(tr('log_deduct_done'),
+                            style: TextStyle(color: grey, fontSize: 12)),
                       if (l.velocity.isNotEmpty) Text(tr('log_row_velocity') + '${l.velocity} fps'),
                       if (l.group.isNotEmpty) Text(tr('log_row_group') + '${l.group}″'),
                       if (l.firearm.isNotEmpty) Text(tr('log_row_firearm') + l.firearm),
@@ -1152,6 +1586,217 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
                 ),
               )),
         ],
+      ),
+    );
+  }
+}
+
+/// 弹头档案区：弹头输入命中已核实系列时展示档案卡（第 4 项）；
+/// 监听输入框文本变化，口径用记录口径推导弹径。
+class _BulletProfileZone extends StatefulWidget {
+  final TextEditingController bulletCtrl;
+  final String? caliber;
+  const _BulletProfileZone({required this.bulletCtrl, required this.caliber});
+
+  @override
+  State<_BulletProfileZone> createState() => _BulletProfileZoneState();
+}
+
+class _BulletProfileZoneState extends State<_BulletProfileZone> {
+  @override
+  void initState() {
+    super.initState();
+    widget.bulletCtrl.addListener(_onText);
+  }
+
+  @override
+  void dispose() {
+    widget.bulletCtrl.removeListener(_onText);
+    super.dispose();
+  }
+
+  void _onText() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
+    final profiles = bulletProfilesForBulletAndCaliber(
+      widget.bulletCtrl.text,
+      widget.caliber,
+    );
+    if (profiles.isEmpty) return const SizedBox.shrink();
+    return BulletProfileCard(profiles: profiles);
+  }
+}
+
+/// 实时换算条（第 6 项）：复装表单输入框上方，随输入实时显示
+/// 装药量 gr↔g、COL in↔mm、弹头重 gr↔g、初速 fps↔m/s，以及
+/// 弹头重 + 初速得出的枪口动能与后坐力。只做物理换算（公式与
+/// 装药工具页一致），不给装药建议；缺输入的项不显示，不估算。
+/// 弹头重取数顺序：弹头文本里的 gr 数 → 组件库规格里的 gr 数；
+/// 枪重取试射枪械在图鉴里的重量（kg/g/oz/lb 换算），取不到则
+/// 不显示后坐力。
+class _LoadConvertStrip extends StatefulWidget {
+  final TextEditingController bulletCtrl;
+  final TextEditingController chargeCtrl;
+  final TextEditingController colCtrl;
+  final TextEditingController velocityCtrl;
+  final TextEditingController firearmCtrl;
+  const _LoadConvertStrip({
+    required this.bulletCtrl,
+    required this.chargeCtrl,
+    required this.colCtrl,
+    required this.velocityCtrl,
+    required this.firearmCtrl,
+  });
+
+  @override
+  State<_LoadConvertStrip> createState() => _LoadConvertStripState();
+}
+
+class _LoadConvertStripState extends State<_LoadConvertStrip> {
+  static const _grToG = 0.06479891;
+  static const _fpsToMs = 0.3048;
+
+  List<TextEditingController> get _ctrls => [
+        widget.bulletCtrl,
+        widget.chargeCtrl,
+        widget.colCtrl,
+        widget.velocityCtrl,
+        widget.firearmCtrl,
+      ];
+
+  @override
+  void initState() {
+    super.initState();
+    for (final c in _ctrls) c.addListener(_onText);
+  }
+
+  @override
+  void dispose() {
+    for (final c in _ctrls) c.removeListener(_onText);
+    super.dispose();
+  }
+
+  void _onText() => setState(() {});
+
+  double? _grOfText(String s) {
+    final m = RegExp(r'(\d+(?:\.\d+)?)\s*gr').firstMatch(s);
+    return m == null ? null : double.tryParse(m.group(1)!);
+  }
+
+  String _fmt(double v, [int digits = 2]) {
+    var s = v.toStringAsFixed(digits);
+    while (s.contains('.') && s.endsWith('0')) {
+      s = s.substring(0, s.length - 1);
+    }
+    if (s.endsWith('.')) s = s.substring(0, s.length - 1);
+    return s;
+  }
+
+  double? _bulletGr() {
+    final fromText = _grOfText(widget.bulletCtrl.text);
+    if (fromText != null) return fromText;
+    final c = findComponent('弹头', widget.bulletCtrl.text);
+    if (c != null) return _grOfText(c.spec);
+    return null;
+  }
+
+  double? _gunKg() {
+    final name = widget.firearmCtrl.text.trim();
+    if (name.isEmpty) return null;
+    for (final g in guns) {
+      if (g.name != name && g.nameEn != name) continue;
+      final m =
+          RegExp(r'(\d+(?:\.\d+)?)\s*(kg|g|oz|lb)').firstMatch(g.weight);
+      if (m == null) return null;
+      final v = double.tryParse(m.group(1)!) ?? 0;
+      switch (m.group(2)) {
+        case 'kg':
+          return v;
+        case 'g':
+          return v / 1000;
+        case 'oz':
+          return v * 0.0283495;
+        case 'lb':
+          return v * 0.45359237;
+      }
+      return null;
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final charge = double.tryParse(widget.chargeCtrl.text.trim()) ?? 0;
+    final col = double.tryParse(widget.colCtrl.text.trim()) ?? 0;
+    final velocity = double.tryParse(widget.velocityCtrl.text.trim()) ?? 0;
+    final bulletGr = _bulletGr();
+    final lines = <String>[];
+    if (charge > 0) {
+      lines.add(
+          '${tr('load_convert_charge')} ${_fmt(charge)} gr = ${_fmt(charge * _grToG, 3)} g');
+    }
+    if (col > 0) {
+      lines.add(
+          '${tr('load_convert_col')} ${_fmt(col)}″ = ${_fmt(col * 25.4, 2)} mm');
+    }
+    if (bulletGr != null && bulletGr > 0) {
+      lines.add(
+          '${tr('load_convert_bullet')} ${_fmt(bulletGr)} gr = ${_fmt(bulletGr * _grToG, 3)} g');
+    }
+    if (velocity > 0) {
+      lines.add(
+          '${tr('load_convert_velocity')} ${_fmt(velocity)} fps = ${_fmt(velocity * _fpsToMs, 2)} m/s');
+    }
+    if (bulletGr != null && bulletGr > 0 && velocity > 0) {
+      final m = bulletGr * _grToG / 1000;
+      final v = velocity * _fpsToMs;
+      final eJ = 0.5 * m * v * v;
+      lines.add(tr('load_energy_prefix') +
+          _fmt(eJ, 1) +
+          tr('load_energy_mid') +
+          _fmt(eJ * 0.737562, 1) +
+          tr('load_energy_suffix'));
+      final gunKg = _gunKg();
+      if (gunKg != null && gunKg > 0) {
+        final powderKg = charge * _grToG / 1000;
+        final rv = (m * v + powderKg * v * 1.75) / gunKg;
+        final rJ = 0.5 * gunKg * rv * rv;
+        lines.add(tr('load_recoil_prefix') +
+            _fmt(rJ, 1) +
+            tr('load_recoil_mid_a') +
+            _fmt(rJ * 0.737562, 1) +
+            tr('load_recoil_mid_b') +
+            _fmt(rv, 2) +
+            tr('load_recoil_suffix'));
+      }
+    }
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(tr('load_convert_title'),
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            if (lines.isEmpty)
+              Text(tr('load_convert_empty'),
+                  style: const TextStyle(color: Colors.grey, fontSize: 12))
+            else
+              ...lines.map((s) => Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(s, style: const TextStyle(fontSize: 13)),
+                  )),
+            if (lines.any((s) => s.startsWith(tr('load_recoil_prefix'))))
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(tr('load_gas_note'),
+                    style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              ),
+          ],
+        ),
       ),
     );
   }

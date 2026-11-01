@@ -104,6 +104,10 @@ class Gun {
   /// 可换枪管口径（2.2.5）：仅厂商官方宣称的用户级快换枪管多口径
   /// 系统才填；空列表表示单口径枪，详情页不显示该栏。
   final List<CaliberOption> caliberOptions;
+  /// 缠距与缠向（本批）：只填厂商官方公开数据，空=未收录；
+  /// 如 twist '1:10"'、twistDir '右旋'。
+  final String twist;
+  final String twistDir;
 
   const Gun({
     required this.name,
@@ -125,6 +129,8 @@ class Gun {
     this.nameEn,
     this.price,
     this.caliberOptions = const [],
+    this.twist = '',
+    this.twistDir = '',
   });
 }
 

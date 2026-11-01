@@ -20,6 +20,8 @@ class MaintenanceRecord {
   String date;
   String type;
   String detail;
+  // 备注（第 9 项新增）：旧记录缺失时默认空串，不影响旧数据读取。
+  String note;
   int roundsAt;
   int roundsSince;
   int snapshotRounds;
@@ -28,6 +30,7 @@ class MaintenanceRecord {
       required this.date,
       required this.type,
       required this.detail,
+      this.note = '',
       this.roundsAt = 0,
       this.roundsSince = -1,
       this.snapshotRounds = -1});
@@ -37,6 +40,7 @@ class MaintenanceRecord {
         'date': date,
         'type': type,
         'detail': detail,
+        'note': note,
         'roundsAt': roundsAt,
         'roundsSince': roundsSince,
         'snapshotRounds': snapshotRounds,
@@ -48,6 +52,7 @@ class MaintenanceRecord {
         date: j['date'] as String? ?? '',
         type: j['type'] as String? ?? '清洁',
         detail: j['detail'] as String? ?? '',
+        note: j['note'] as String? ?? '',
         roundsAt: (j['roundsAt'] as num?)?.toInt() ?? 0,
         roundsSince: (j['roundsSince'] as num?)?.toInt() ?? -1,
         snapshotRounds: (j['snapshotRounds'] as num?)?.toInt() ?? -1,
@@ -81,6 +86,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
   final _records = <MaintenanceRecord>[];
   final _gunCtrl = TextEditingController();
   final _detailCtrl = TextEditingController();
+  final _noteCtrl = TextEditingController();
   final _roundsCtrl = TextEditingController();
   String _type = '清洁';
   String _date = '';
@@ -100,6 +106,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
   void dispose() {
     _gunCtrl.dispose();
     _detailCtrl.dispose();
+    _noteCtrl.dispose();
     _roundsCtrl.dispose();
     super.dispose();
   }
@@ -151,12 +158,6 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
   String _today() {
     final now = DateTime.now();
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-  }
-
-  int _daysAgo(String date) {
-    final d = DateTime.tryParse(date);
-    if (d == null) return -1;
-    return DateTime.now().difference(d).inDays;
   }
 
   Future<void> _pickDate() async {
@@ -215,14 +216,26 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
               date: _date,
               type: _type,
               detail: detail,
+              note: _noteCtrl.text.trim(),
               roundsSince: roundsSince,
               snapshotRounds: snapshot));
       _records.sort((a, b) => b.date.compareTo(a.date));
       _detailCtrl.clear();
+      _noteCtrl.clear();
       _roundsCtrl.clear();
     });
     _save();
   }
+
+  Widget _th(String s) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        child: Text(s, style: const TextStyle(fontWeight: FontWeight.bold)),
+      );
+
+  Widget _td(String s) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        child: Text(s, style: const TextStyle(fontSize: 13)),
+      );
 
   String _roundsLine(MaintenanceRecord r) {
     if (r.snapshotRounds >= 0) {
@@ -260,10 +273,6 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
           break;
         }
       }
-    }
-    final groups = <String, List<MaintenanceRecord>>{};
-    for (final r in _records) {
-      groups.putIfAbsent(r.gunName, () => []).add(r);
     }
     return Scaffold(
       appBar: SubPageAppBar(title: tr('maint_title')),
@@ -322,6 +331,11 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
               controller: _detailCtrl,
               decoration: InputDecoration(labelText: _detailHint)),
           const SizedBox(height: 8),
+          TextField(
+              controller: _noteCtrl,
+              decoration:
+                  InputDecoration(labelText: tr('maint_note_field'))),
+          const SizedBox(height: 8),
           if (linked != null) ...[
             Card(
               child: Padding(
@@ -377,42 +391,80 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                 Text(tr('maint_add_btn'), style: TextStyle(color: Colors.white)),
           ),
           const SizedBox(height: 20),
+          Text(tr('maint_table_title'),
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
           if (_records.isEmpty)
             Text(tr('maint_empty'),
                 style: TextStyle(color: Colors.grey))
           else
-            ...groups.entries.map((entry) {
-              final latest = entry.value.first;
-              final days = _daysAgo(latest.date);
-              final current = _collectionGun(entry.key);
-              var sinceLine = '';
-              if (current != null && latest.snapshotRounds >= 0) {
-                sinceLine =
-                    tr('maint_since_more_prefix') + '${_clampDelta(current.rounds, latest.snapshotRounds)}' + tr('maint_since_more_suffix');
-              }
-              return Card(
-                child: ExpansionTile(
-                  title: Text(entry.key),
-                  subtitle: Text(
-                      tr('maint_last_prefix') + latest.date + (days >= 0 ? tr('dope_days_ago_prefix') + '$days' + tr('dope_days_ago_suffix') : '') + tr('maint_last_mid') + '${entry.value.length}' + tr('maint_last_suffix') + sinceLine),
-                  children: entry.value.map((r) {
-                    final line = _roundsLine(r);
-                    return ListTile(
-                      title: Text('${_maintTypeLabel(r.type)} · ${r.detail}'),
-                      subtitle: Text(
-                          line.isEmpty ? r.date : '${r.date} · $line'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: () {
-                          setState(() => _records.remove(r));
-                          _save();
-                        },
-                      ),
-                    );
-                  }).toList(),
+            // 第 9 项：正规表格式——表头行 + 行列对齐，横向滚动，
+            // 不再用卡片堆叠；间隔发数并入内容格第二行。
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Table(
+                defaultVerticalAlignment: TableCellVerticalAlignment.top,
+                columnWidths: const {
+                  0: FixedColumnWidth(92),
+                  1: FixedColumnWidth(96),
+                  2: FixedColumnWidth(56),
+                  3: FixedColumnWidth(170),
+                  4: FixedColumnWidth(130),
+                  5: FixedColumnWidth(44),
+                },
+                border: const TableBorder(
+                  top: BorderSide(color: Colors.grey, width: 0.5),
+                  bottom: BorderSide(color: Colors.grey, width: 0.5),
+                  horizontalInside:
+                      BorderSide(color: Colors.grey, width: 0.3),
                 ),
-              );
-            }),
+                children: [
+                  TableRow(
+                    children: [
+                      _th(tr('maint_table_date')),
+                      _th(tr('maint_table_gun')),
+                      _th(tr('maint_table_type')),
+                      _th(tr('maint_table_detail')),
+                      _th(tr('maint_table_note')),
+                      const SizedBox.shrink(),
+                    ],
+                  ),
+                  for (final r in _records)
+                    TableRow(
+                      children: [
+                        _td(r.date),
+                        _td(r.gunName),
+                        _td(_maintTypeLabel(r.type)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 8, horizontal: 4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(r.detail,
+                                  style: const TextStyle(fontSize: 13)),
+                              if (_roundsLine(r).isNotEmpty)
+                                Text(_roundsLine(r),
+                                    style: const TextStyle(
+                                        color: Colors.grey, fontSize: 11)),
+                            ],
+                          ),
+                        ),
+                        _td(r.note.isEmpty ? '—' : r.note),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () {
+                            setState(() => _records.remove(r));
+                            _save();
+                          },
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
         ],
       ),
     );

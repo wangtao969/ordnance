@@ -16,6 +16,8 @@ import 'gun_picker_dialog.dart';
 import 'ammo_inventory_screen.dart';
 import 'reload_log_screen.dart';
 import 'range_tools_screen.dart';
+import '../sensors_api.dart';
+import '../weather_api.dart';
 
 /// 靶场成绩：分组、距离、发数，绑定枪种；成绩直接喂靶场勋章。
 /// 顶部统计卡 + 按枪筛选 + 结构化卡片，成绩不再是一长串字；
@@ -143,6 +145,9 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
     final weatherCtrl = TextEditingController(text: '');
     final windCtrl = TextEditingController(text: '');
     final noteCtrl = TextEditingController();
+    // 传感器融合：指南针记射向（随成绩保存），水平仪只显示角度（不保存）。
+    var heading = '';
+    var levelText = '';
     var position = '站姿';
     var target = '胸环靶';
     const positions = ['站姿', '跪姿', '卧姿', '依托', '坐姿'];
@@ -293,6 +298,52 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(heading.isEmpty
+                        ? tr('trip_heading')
+                        : '${tr('trip_heading')} $heading'),
+                  ),
+                  OutlinedButton(
+                    onPressed: () async {
+                      final r = await getCompassHeading();
+                      if (r.value != null) {
+                        final deg = r.value!;
+                        setDialogState(() => heading =
+                            '${deg.toStringAsFixed(0)}° ${compassDir(deg)}');
+                        showAppToast(context, tr('trip_heading_saved'));
+                      } else {
+                        showAppToast(context, tr('trip_heading_failed'));
+                      }
+                    },
+                    child: Text(tr('trip_record_heading')),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(levelText.isEmpty
+                        ? tr('trip_level')
+                        : '${tr('trip_level')} $levelText'),
+                  ),
+                  OutlinedButton(
+                    onPressed: () async {
+                      final r = await getRollDegrees();
+                      if (r.value != null) {
+                        setDialogState(() => levelText =
+                            '${r.value!.toStringAsFixed(1)}°');
+                      } else {
+                        showAppToast(context, tr('trip_level_failed'));
+                      }
+                    },
+                    child: Text(tr('trip_level_read')),
+                  ),
+                ],
+              ),
               if (releasedBatches.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Text(tr('range_batch_label'),
@@ -377,6 +428,7 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
         weather: weatherCtrl.text.trim(),
         wind: windCtrl.text.trim(),
         batchNo: batchChoice == '不关联' ? '' : batchChoice,
+        heading: heading,
       ));
       showAppToast(context, tr('range_saved'));
       if (deductStock && deductItemFinal != null && shots > 0) {
@@ -559,6 +611,8 @@ class _CommunityRangeScreenState extends State<CommunityRangeScreen> {
                               if (r.ammo.isNotEmpty) r.ammo,
                               if (r.weather.isNotEmpty) r.weather,
                               if (r.wind.isNotEmpty) r.wind,
+                              if (r.heading.isNotEmpty)
+                                '${tr('trip_heading')} ${r.heading}',
                               if (r.note.isNotEmpty) r.note,
                             ].join(' · ');
                             return Card(

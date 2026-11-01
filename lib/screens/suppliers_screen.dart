@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../data.dart';
+import '../bullet_profiles.dart';
 import '../english_terms.dart';
 import '../widgets/app_top_bar.dart';
+import '../widgets/bullet_profile_card.dart';
 import '../i18n.dart';
 
 /// 组件供应商子页：从复装页独立出来，避免长列表挡住下面内容。
@@ -69,16 +71,29 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
               itemCount: components.length,
               itemBuilder: (context, i) {
                 final c = components[i];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    title: Text('${c.vendor} ${c.name}'),
-                    subtitle: Text(
-                        '${c.spec}\n${c.feature}\n' + tr('suppliers_price_prefix') + '${c.price}'),
-                    trailing:
-                        Chip(label: Text(componentKindDisplay(c.kind))),
-                    isThreeLine: true,
-                  ),
+                final profiles = c.kind == '弹头'
+                    ? bulletProfilesForComponent(c.vendor, c.name)
+                    : const <BulletProfile>[];
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        title: Text('${c.vendor} ${c.name}'),
+                        subtitle: Text(
+                            '${c.spec}\n${c.feature}\n' + tr('suppliers_price_prefix') + '${c.price}'),
+                        trailing:
+                            Chip(label: Text(componentKindDisplay(c.kind))),
+                        isThreeLine: true,
+                      ),
+                    ),
+                    if (profiles.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: BulletProfileCard(profiles: profiles),
+                      ),
+                  ],
                 );
               },
             ),

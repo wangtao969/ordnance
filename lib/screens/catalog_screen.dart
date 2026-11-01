@@ -17,6 +17,10 @@ import 'legend_list_screen.dart';
 import '../knife_data.dart';
 import 'knife_detail_screen.dart';
 import 'knife_list_screen.dart';
+import '../weather_api.dart';
+import '../tools_units.dart';
+import '../sensors_api.dart';
+import 'weather_screen.dart';
 
 class CatalogScreen extends StatefulWidget {
   const CatalogScreen({super.key});
@@ -44,7 +48,9 @@ class _CatalogScreenState extends State<CatalogScreen> {
                 g.name.toLowerCase().contains(q) ||
                 (g.nameEn ?? '').toLowerCase().contains(q) ||
                 g.vendor.toLowerCase().contains(q) ||
-                g.caliber.toLowerCase().contains(q))
+                g.caliber.toLowerCase().contains(q) ||
+                // 第 10 项：品类中英文都要命中。
+                categoryMatches(g.category, q))
             .toList();
     // 刀具搜索与枪械搜索并列：搜刀名、英文名、国家、分类都能命中。
     // 今日一枪：按天取固定一把，当天不变、次日换枪。
@@ -77,6 +83,10 @@ class _CatalogScreenState extends State<CatalogScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8 + kToolbarHeight, 16, 110),
           children: [
+            // 首页细长条天气：不高，横向滚动播报当前位置温度/湿度/
+            // 风速风向；点卡片进天气页；搜索时隐藏。
+            if (_query.isEmpty) const _HomeWeatherStrip(),
+            if (_query.isEmpty) const SizedBox(height: 12),
             // 枪械资讯入口：页头太空，补一条厂商与弹药商资讯快讯；搜索时隐藏。
             if (_query.isEmpty)
               Card(
@@ -613,6 +623,128 @@ class _CatalogScreenState extends State<CatalogScreen> {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 首页细长条天气卡片：默认只显示一行提示，点按才要定位权限并拉取
+/// 当前位置天气（不在首页打开时擅自弹权限）；拉取成功后横向滚动播报
+/// 温度/湿度/风速风向，点卡片进天气详情页；失败点按重试。
+class _HomeWeatherStrip extends StatefulWidget {
+  const _HomeWeatherStrip();
+
+  @override
+  State<_HomeWeatherStrip> createState() => _HomeWeatherStripState();
+}
+
+class _HomeWeatherStripState extends State<_HomeWeatherStrip> {
+  // 第 8 项：存原始数据不存格式化串，显示时按单位偏好换算。
+  WeatherData? _w;
+  bool _loading = false;
+  bool _failed = false;
+
+  String _lineText() {
+    final w = _w;
+    if (w == null) return '';
+    final parts = <String>[];
+    if (w.temp != null) parts.add(fmtTemp(w.temp!));
+    if (w.humidity != null) parts.add('湿度 ${w.humidity!.toStringAsFixed(0)}%');
+    if (w.windSpeed != null) {
+      parts.add('风速 ${fmtWind(w.windSpeed!)}'
+          '${w.windDir == null ? '' : ' ${compassDir(w.windDir!)}'}');
+    }
+    if (w.pressure != null) parts.add('气压 ${fmtPressure(w.pressure!)}');
+    return parts.join(' · ');
+  }
+
+  Future<void> _load() async {
+    if (_loading) return;
+    setState(() {
+      _loading = true;
+      _failed = false;
+    });
+    try {
+      final ok = await requestLocationPermission();
+      if (!mounted) return;
+      if (!ok) {
+        setState(() => _failed = true);
+        return;
+      }
+      final pos = await getGpsPosition();
+      if (!mounted) return;
+      if (pos.value == null) {
+        setState(() => _failed = true);
+        return;
+      }
+      final w = await fetchWeather(pos.value!.latitude, pos.value!.longitude);
+      if (!mounted) return;
+      setState(() => _w = w);
+    } catch (_) {
+      if (mounted) setState(() => _failed = true);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      height: 44,
+      decoration: BoxDecoration(
+        color: dark ? const Color(0xFF0D0D0D) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          if (_w != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const WeatherScreen()),
+            );
+          } else {
+            _load();
+          }
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            children: [
+              const Icon(Icons.wb_sunny_outlined, size: 18),
+              const SizedBox(width: 8),
+              if (_loading)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else if (_w != null)
+                Expanded(
+                  child: ValueListenableBuilder<Map<String, String>>(
+                    valueListenable: unitPrefsNotifier,
+                    builder: (_, __, ___) => SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Text(_lineText(),
+                          style: const TextStyle(fontSize: 13)),
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: Text(
+                    _failed
+                        ? tr('home_weather_failed')
+                        : tr('home_weather_load'),
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+              if (_w != null)
+                const Icon(Icons.chevron_right, size: 18),
+            ],
+          ),
         ),
       ),
     );

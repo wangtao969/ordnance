@@ -84,13 +84,20 @@ class RangeTrip {
   List<String> scoreIds; // 关联的 RangeScore.id
   String note;
   // 2.2.5 备忘清单与系统提醒标记：存在行程模型里，不另起存储。
-  // 提醒走系统日历 intent 与系统闹钟 intent，App 不自建通知通道：
   // calendarAdded 只是“已加入日历”标记（intent 方式无可靠回执，
   // 行程改期或删除后日历里的旧事件由用户自己在日历里管）；
   // alarmMs 是上次设闹钟的时间（毫秒，0 = 未设），仅作预填回显。
+  // 本批新增：startMs 为出行时刻（0 = 未设，只记日期）；
+  // reminderMs 为 App 通知时刻（0 = 未设时用默认提醒时间）；
+  // notifyEnabled 为 App 通知开关（通知 id 由行程 id 稳定派生，
+  // 取消时用同一 id）；heading 为指南针记下的射向（'' = 未记）。
   List<MemoItem> memoItems;
   bool calendarAdded;
   int alarmMs;
+  int startMs;
+  int reminderMs;
+  bool notifyEnabled;
+  String heading;
 
   RangeTrip({
     required this.id,
@@ -103,6 +110,10 @@ class RangeTrip {
     List<MemoItem>? memoItems,
     this.calendarAdded = false,
     this.alarmMs = 0,
+    this.startMs = 0,
+    this.reminderMs = 0,
+    this.notifyEnabled = false,
+    this.heading = '',
   })  : gunNames = gunNames ?? [],
         scoreIds = scoreIds ?? [],
         memoItems = memoItems ?? defaultMemoItems();
@@ -128,7 +139,15 @@ class RangeTrip {
         'memoItems': memoItems.map((m) => m.toJson()).toList(),
         'calendarAdded': calendarAdded,
         'alarmMs': alarmMs,
+        'startMs': startMs,
+        'reminderMs': reminderMs,
+        'notifyEnabled': notifyEnabled,
+        'heading': heading,
       };
+
+  /// App 通知的稳定 id：由行程 id 派生，行程不变则 id 不变，
+  /// 设通知与取消通知用同一个 id。
+  int get notifyId => id.hashCode & 0x7fffffff;
 
   factory RangeTrip.fromJson(Map<String, dynamic> j) {
     List<String> strList(dynamic v) {
@@ -160,6 +179,10 @@ class RangeTrip {
               .toList(),
       calendarAdded: j['calendarAdded'] as bool? ?? false,
       alarmMs: (j['alarmMs'] as num?)?.toInt() ?? 0,
+      startMs: (j['startMs'] as num?)?.toInt() ?? 0,
+      reminderMs: (j['reminderMs'] as num?)?.toInt() ?? 0,
+      notifyEnabled: j['notifyEnabled'] as bool? ?? false,
+      heading: j['heading'] as String? ?? '',
     );
   }
 }

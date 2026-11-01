@@ -5,9 +5,11 @@ import '../widgets/app_top_bar.dart';
 import '../widgets/level_badge.dart';
 import '../widgets/app_toast.dart';
 import 'community_account_dialogs.dart';
+import 'community_album_screen.dart';
 import 'community_dm_screen.dart';
 import 'community_profile_screen.dart';
 import 'community_range_screen.dart';
+import 'community_saved_screen.dart';
 
 /// 我的 Tab：个人中心入口。登录后显示头像、等级铭牌与统计，
 /// 下分我的主页、私信、靶场成绩、设置；未登录时显示登录/注册。
@@ -156,6 +158,27 @@ class MyScreen extends StatelessWidget {
                     MaterialPageRoute(
                         builder: (_) =>
                             CommunityProfileScreen(account: me)),
+                  ),
+                ),
+                // 收藏与点赞合一页、相册（第 12 项）。
+                _MenuTile(
+                  icon: Icons.star_outlined,
+                  title: tr('my_saved'),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            const CommunitySavedScreen()),
+                  ),
+                ),
+                _MenuTile(
+                  icon: Icons.photo_library_outlined,
+                  title: tr('my_album'),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            const CommunityAlbumScreen()),
                   ),
                 ),
                 Builder(builder: (_) {

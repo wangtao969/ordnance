@@ -8,6 +8,7 @@ import '../system_actions.dart';
 import '../widgets/app_top_bar.dart';
 import '../widgets/community_theme.dart';
 import '../widgets/level_badge.dart';
+import '../widgets/poll_card.dart';
 import 'community_board_screen.dart';
 import 'community_profile_screen.dart';
 
@@ -77,7 +78,17 @@ class _CommunityPostDetailScreenState
         : '—— 来自 Gun’s Map 社区';
     final text = '${p.title}\n${p.content}\n$suffix';
     try {
-      await _shareChannel.invokeMethod('shareText', {'text': text});
+      // 分享优化（第 11 项）：有图时文字 + 图片 + 作者拼成一次系统分享
+      // （shareImage 可选 text 参数，EXTRA_TEXT + EXTRA_STREAM 同发）；
+      // 无图时仍走纯文字分享。
+      if (p.images.isNotEmpty) {
+        await _shareChannel.invokeMethod('shareImage', {
+          'bytes': p.images.first,
+          'text': text,
+        });
+      } else {
+        await _shareChannel.invokeMethod('shareText', {'text': text});
+      }
     } catch (_) {
       if (mounted) {
         showAppToast(context, tr('post_share_failed'));
@@ -382,6 +393,11 @@ class _CommunityPostDetailScreenState
                             size: 20),
                         label: Text(p.videoPath.split('/').last),
                       ),
+                    ],
+                    // 投票区（第 11 项）：选项 + 票数 + 百分比，点选项投票。
+                    if (p.pollOptions.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      PollCard(post: p),
                     ],
                     const SizedBox(height: 8),
                     Row(

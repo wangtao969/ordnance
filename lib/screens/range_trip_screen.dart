@@ -8,6 +8,9 @@ import '../community_store.dart';
 import '../i18n.dart';
 import '../range_trip_data.dart';
 import '../system_actions.dart';
+import '../weather_api.dart';
+import '../notify_api.dart';
+import '../sensors_api.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/app_top_bar.dart';
 import 'gun_picker_dialog.dart';
@@ -109,6 +112,7 @@ class _RangeTripScreenState extends State<RangeTripScreen> {
       ),
     );
     if (ok == true && mounted) {
+      if (t.notifyEnabled) await cancelTripNotification(t.notifyId);
       setState(() => _trips.remove(t));
       _save();
     }
@@ -167,7 +171,8 @@ class _RangeTripScreenState extends State<RangeTripScreen> {
 }
 
 /// 行程详情：行程信息 + 被关联的成绩（按 id 从当前靶场成绩里找，
-/// 已删除的成绩只计条数、不显示）+ 备忘清单 + 系统日历/闹钟入口。
+/// 已删除的成绩只计条数、不显示）+ 备忘清单 + 提醒（系统闹钟 /
+/// 系统日历 / App 通知三选项并列）+ 指南针射向。
 /// 备忘改动直接改 trip 对象（与列表页同一实例），再经 onChanged 回写。
 class RangeTripDetailScreen extends StatefulWidget {
   final RangeTrip trip;
@@ -295,7 +300,11 @@ class _RangeTripDetailScreenState extends State<RangeTripDetailScreen> {
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text(_dateText(trip.dateMs),
+            Text(
+                _dateText(trip.dateMs) +
+                    (trip.startMs > 0
+                        ? ' ${_timeText(trip.startMs)}'
+                        : ''),
                 style:
                     const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
             if (trip.place.isNotEmpty) ...[
@@ -316,6 +325,20 @@ class _RangeTripDetailScreenState extends State<RangeTripDetailScreen> {
               Text(trip.note,
                   style: const TextStyle(color: Colors.grey)),
             ],
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(trip.heading.isEmpty
+                      ? tr('trip_heading')
+                      : '${tr('trip_heading')} ${trip.heading}'),
+                ),
+                OutlinedButton(
+                  onPressed: _recordHeading,
+                  child: Text(tr('trip_record_heading')),
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
             Text(tr('trip_scores'),
                 style:
@@ -379,23 +402,169 @@ class _RangeTripDetailScreenState extends State<RangeTripDetailScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: _addCalendar,
-              icon: const Icon(Icons.calendar_month_outlined, size: 18),
-              label: Text(trip.calendarAdded
-                  ? tr('trip_calendar_added')
-                  : tr('trip_add_calendar')),
+            Text(tr('trip_reminder'),
+                style:
+                    const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: _pickReminderTime,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                        '${tr('trip_reminder_time')} ${_reminderText()}'),
+                  ),
+                  const Icon(Icons.edit, size: 16),
+                ],
+              ),
             ),
             const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: _setAlarm,
-              icon: const Icon(Icons.alarm_outlined, size: 18),
-              label: Text(tr('trip_set_alarm')),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _setAlarm,
+                    icon: const Icon(Icons.alarm_outlined, size: 18),
+                    label: Text(tr('trip_set_alarm')),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _addCalendar,
+                    icon: const Icon(Icons.calendar_month_outlined, size: 18),
+                    label: Text(trip.calendarAdded
+                        ? tr('trip_calendar_added')
+                        : tr('trip_add_calendar')),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _toggleNotify,
+                    icon:
+                        const Icon(Icons.notifications_outlined, size: 18),
+                    label: Text(trip.notifyEnabled
+                        ? tr('trip_notify_on')
+                        : tr('trip_notify')),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  String _timeText(int ms) {
+    final d = DateTime.fromMillisecondsSinceEpoch(ms);
+    return '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+  }
+
+  /// 提醒时刻文案：已设用已设值，未设用默认（行程前一天 20:00）。
+  String _reminderText() {
+    final t = widget.trip;
+    final ms = t.reminderMs > 0 ? t.reminderMs : RangeTrip.defaultReminderMs(t.dateMs);
+    return CommunityStore.formatTime(DateTime.fromMillisecondsSinceEpoch(ms));
+  }
+
+  String _notifyTitle(RangeTrip t) =>
+      t.place.isNotEmpty ? t.place : _dateText(t.dateMs);
+
+  /// App 通知正文：与系统闹钟同一口径（未带备忘数 / 全部已勾选）。
+  String _notifyBody(RangeTrip t) {
+    final unpacked = t.memoItems.where((m) => !m.done).length;
+    return unpacked > 0
+        ? '${tr('trip_alarm_unpacked_prefix')}$unpacked${tr('trip_alarm_unpacked_suffix')}'
+        : tr('trip_alarm_all_packed');
+  }
+
+  /// 指南针记射向：读数成功写入行程，失败只给提示。
+  Future<void> _recordHeading() async {
+    final r = await getCompassHeading();
+    if (!mounted) return;
+    if (r.value != null) {
+      final deg = r.value!;
+      setState(() =>
+          widget.trip.heading = '${deg.toStringAsFixed(0)}° ${compassDir(deg)}');
+      widget.onChanged();
+      showAppToast(context, tr('trip_heading_saved'));
+    } else {
+      showAppToast(context, tr('trip_heading_failed'));
+    }
+  }
+
+  /// 改提醒时间：只改时刻（日期沿用原提醒日期）；App 通知已开时
+  /// 取消旧通知、按新时刻重设，失败则关掉开关并提示。
+  Future<void> _pickReminderTime() async {
+    final t = widget.trip;
+    final base = DateTime.fromMillisecondsSinceEpoch(
+        t.reminderMs > 0 ? t.reminderMs : RangeTrip.defaultReminderMs(t.dateMs));
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(base),
+    );
+    if (picked == null || !mounted) return;
+    final next = DateTime(base.year, base.month, base.day, picked.hour,
+            picked.minute)
+        .millisecondsSinceEpoch;
+    final wasOn = t.notifyEnabled;
+    if (wasOn) await cancelTripNotification(t.notifyId);
+    t.reminderMs = next;
+    if (wasOn) {
+      final ok = await scheduleTripNotification(
+        id: t.notifyId,
+        title: _notifyTitle(t),
+        body: _notifyBody(t),
+        timeMs: next,
+      );
+      if (!ok) {
+        t.notifyEnabled = false;
+        showAppToast(context, tr('trip_notify_failed'));
+      }
+    }
+    setState(() {});
+    widget.onChanged();
+  }
+
+  /// App 通知开关：开时先要通知权限（被拒只给提示），按提醒时刻设
+  /// AlarmManager 通知；关时取消已设通知与通知栏同条。
+  Future<void> _toggleNotify() async {
+    final t = widget.trip;
+    if (t.notifyEnabled) {
+      await cancelTripNotification(t.notifyId);
+      if (!mounted) return;
+      setState(() => t.notifyEnabled = false);
+      widget.onChanged();
+      showAppToast(context, tr('trip_notify_off'));
+      return;
+    }
+    final granted = await ensureNotifyPermission();
+    if (!mounted) return;
+    if (!granted) {
+      showAppToast(context, tr('trip_notify_denied'));
+      return;
+    }
+    final when =
+        t.reminderMs > 0 ? t.reminderMs : RangeTrip.defaultReminderMs(t.dateMs);
+    final ok = await scheduleTripNotification(
+      id: t.notifyId,
+      title: _notifyTitle(t),
+      body: _notifyBody(t),
+      timeMs: when,
+    );
+    if (!mounted) return;
+    if (!ok) {
+      showAppToast(context, tr('trip_notify_failed'));
+      return;
+    }
+    setState(() {
+      t.notifyEnabled = true;
+      t.reminderMs = when;
+    });
+    widget.onChanged();
+    showAppToast(context, tr('trip_notify_on'));
   }
 }
 
@@ -415,6 +584,7 @@ class _RangeTripAddPageState extends State<RangeTripAddPage> {
   final _guns = <String>[];
   final _scoreIds = <String>{};
   String _date = '';
+  TimeOfDay? _time;
 
   @override
   void initState() {
@@ -438,13 +608,41 @@ class _RangeTripAddPageState extends State<RangeTripAddPage> {
       context: context,
       initialDate: initial,
       firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (picked == null) return;
     setState(() {
       _date =
           '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
     });
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _time ?? const TimeOfDay(hour: 9, minute: 0),
+    );
+    if (picked == null) return;
+    setState(() => _time = picked);
+  }
+
+  /// 定位填地点：先要定位权限，成功把经纬度填入地点栏。
+  Future<void> _locate() async {
+    final ok = await requestLocationPermission();
+    if (!mounted) return;
+    if (!ok) {
+      showAppToast(context, tr('compose_location_denied'));
+      return;
+    }
+    final pos = await getGpsPosition();
+    if (!mounted) return;
+    if (pos.value == null) {
+      showAppToast(context, tr('compose_location_failed'));
+      return;
+    }
+    setState(() => _placeCtrl.text =
+        '${pos.value!.latitude.toStringAsFixed(5)}, ${pos.value!.longitude.toStringAsFixed(5)}');
+    showAppToast(context, tr('trip_located'));
   }
 
   Future<void> _addGun() async {
@@ -457,9 +655,15 @@ class _RangeTripAddPageState extends State<RangeTripAddPage> {
 
   void _save() {
     final date = DateTime.tryParse(_date) ?? DateTime.now();
+    final startMs = _time == null
+        ? 0
+        : DateTime(date.year, date.month, date.day, _time!.hour,
+                _time!.minute)
+            .millisecondsSinceEpoch;
     Navigator.of(context).pop(RangeTrip(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       dateMs: date.millisecondsSinceEpoch,
+      startMs: startMs,
       place: _placeCtrl.text.trim(),
       gunNames: List.of(_guns),
       ammoNote: _ammoCtrl.text.trim(),
@@ -486,9 +690,31 @@ class _RangeTripAddPageState extends State<RangeTripAddPage> {
               ),
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: _placeCtrl,
-              decoration: InputDecoration(labelText: tr('trip_place')),
+            InkWell(
+              onTap: _pickTime,
+              child: InputDecorator(
+                decoration: InputDecoration(labelText: tr('trip_time')),
+                child: Text(_time == null
+                    ? ''
+                    : '${_time!.hour.toString().padLeft(2, '0')}:${_time!.minute.toString().padLeft(2, '0')}'),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _placeCtrl,
+                    decoration:
+                        InputDecoration(labelText: tr('trip_place')),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton(
+                  onPressed: _locate,
+                  child: Text(tr('trip_locate')),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             Text(tr('trip_guns'),

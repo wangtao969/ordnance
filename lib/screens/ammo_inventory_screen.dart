@@ -5,12 +5,14 @@ import '../data.dart';
 import '../i18n.dart';
 import '../widgets/app_top_bar.dart';
 import '../widgets/app_toast.dart';
-import '../widgets/bar_chart.dart';
+import '../widgets/time_line_chart.dart';
 import 'reload_log_screen.dart';
 
 /// 弹药库存：工具向，不用登录，纯本机记录。
 /// 经 gunsmap/prefs 存本机（key ammo_inventory_v1），重启不丢。
-/// 只记你手头的弹药现存发数，不提供价格、不卖弹药、不做任何交易。
+/// 只记你手头的弹药现存发数，不卖弹药、不做任何交易。
+/// 价格区按口径记每发单价（用户自填数字，不假设货币），改价留记录；
+/// 库存与价格曲线都用折线图，库存曲线由出入库记录重建。
 ///
 /// 按射手用弹流程设计：
 /// - 买是按盒买的：每种弹记每盒发数，现存显示成“盒 + 散”；
@@ -161,6 +163,73 @@ Future<void> addAmmoMovement(AmmoMovement m) async {
   } catch (_) {}
 }
 
+/// 口径单价记录：日期、口径、每发单价（用户自填数字，不假设货币）；
+/// 改价时追加一条，价格曲线由此生成。
+class AmmoPricePoint {
+  String date;
+  String caliber;
+  double price;
+  AmmoPricePoint(
+      {required this.date, required this.caliber, required this.price});
+
+  Map<String, dynamic> toJson() =>
+      {'date': date, 'caliber': caliber, 'price': price};
+
+  factory AmmoPricePoint.fromJson(Map<String, dynamic> j) => AmmoPricePoint(
+        date: j['date'] as String? ?? '',
+        caliber: j['caliber'] as String? ?? '',
+        price: (j['price'] as num?)?.toDouble() ?? 0,
+      );
+}
+
+const _ammoPricesKey = 'ammo_prices_v1';
+const _ammoPriceHistoryKey = 'ammo_price_history_v1';
+
+Future<Map<String, double>> loadAmmoPrices() async {
+  try {
+    final raw = await _ammoPrefsChannel
+        .invokeMethod<String>('getString', {'key': _ammoPricesKey})
+        .timeout(const Duration(seconds: 2));
+    if (raw == null || raw.isEmpty) return {};
+    final m = jsonDecode(raw) as Map<String, dynamic>;
+    return m.map((k, v) => MapEntry(k, (v as num).toDouble()));
+  } catch (_) {
+    return {};
+  }
+}
+
+Future<void> saveAmmoPrices(Map<String, double> prices) async {
+  try {
+    await _ammoPrefsChannel.invokeMethod('setString', {
+      'key': _ammoPricesKey,
+      'value': jsonEncode(prices),
+    });
+  } catch (_) {}
+}
+
+Future<List<AmmoPricePoint>> loadAmmoPriceHistory() async {
+  try {
+    final raw = await _ammoPrefsChannel
+        .invokeMethod<String>('getString', {'key': _ammoPriceHistoryKey})
+        .timeout(const Duration(seconds: 2));
+    if (raw == null || raw.isEmpty) return [];
+    return (jsonDecode(raw) as List)
+        .map((e) => AmmoPricePoint.fromJson(e as Map<String, dynamic>))
+        .toList();
+  } catch (_) {
+    return [];
+  }
+}
+
+Future<void> saveAmmoPriceHistory(List<AmmoPricePoint> points) async {
+  try {
+    await _ammoPrefsChannel.invokeMethod('setString', {
+      'key': _ammoPriceHistoryKey,
+      'value': jsonEncode(points.map((e) => e.toJson()).toList()),
+    });
+  } catch (_) {}
+}
+
 String _today() {
   final now = DateTime.now();
   return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
@@ -187,6 +256,11 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
   final _batchCtrl = TextEditingController();
   String _caliber = _manualCaliber;
   String _kind = '厂弹';
+  final _prices = <String, double>{};
+  final _priceHistory = <AmmoPricePoint>[];
+  String _chartMode = 'stock';
+  final _priceCtrl = TextEditingController();
+  String _priceCaliber = '';
 
   @override
   void initState() {
@@ -204,12 +278,15 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
     _lowCtrl.dispose();
     _locationCtrl.dispose();
     _batchCtrl.dispose();
+    _priceCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _load() async {
     final items = await loadAmmoItems();
     final movements = await loadAmmoMovements();
+    final prices = await loadAmmoPrices();
+    final history = await loadAmmoPriceHistory();
     if (!mounted) return;
     setState(() {
       _items
@@ -218,6 +295,12 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
       _movements
         ..clear()
         ..addAll(movements);
+      _prices
+        ..clear()
+        ..addAll(prices);
+      _priceHistory
+        ..clear()
+        ..addAll(history);
     });
   }
 
@@ -273,6 +356,55 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
     _log(item, actual, reason);
   }
 
+  /// 库存品类显示（含第 5 项新增的 4 个组件品类）。
+  String _kindLabel(String k) {
+    switch (k) {
+      case '复装':
+        return tr('ammo_kind_reload');
+      case '弹头':
+        return tr('ammo_kind_bullet');
+      case '火药':
+        return tr('ammo_kind_powder');
+      case '弹壳':
+        return tr('ammo_kind_case');
+      case '底火':
+        return tr('ammo_kind_primer');
+      default:
+        return tr('ammo_kind_factory');
+    }
+  }
+
+  /// 已有条目改阈值（第 5 项④）：录入时填过的也可事后改。
+  Future<void> _editLowDialog(AmmoItem item) async {
+    final ctrl = TextEditingController(
+        text: item.lowAt >= 0 ? '${item.lowAt}' : '');
+    final v = await showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('ammo_set_low')),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: TextInputType.number,
+          decoration:
+              InputDecoration(labelText: tr('ammo_low_label')),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(tr('cancel'))),
+          TextButton(
+              onPressed: () =>
+                  Navigator.pop(ctx, int.tryParse(ctrl.text.trim())),
+              child: Text(tr('confirm'))),
+        ],
+      ),
+    );
+    if (v == null) return;
+    setState(() => item.lowAt = v < 0 ? -1 : v);
+    _save();
+    showAppToast(context, tr('ammo_low_set'));
+  }
+
   String _reasonLabel(String reason) {
     switch (reason) {
       case '买入':
@@ -285,6 +417,8 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
         return tr('ammo_reason_count');
       case '复装入库':
         return tr('ammo_reason_reload_in');
+      case '复装消耗':
+        return tr('ammo_reason_reload_use');
       default:
         return reason;
     }
@@ -304,6 +438,104 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
       }
     });
     addAmmoMovement(m);
+  }
+
+  void _setPrice(String caliber, double price) {
+    final old = _prices[caliber];
+    setState(() => _prices[caliber] = price);
+    saveAmmoPrices(_prices);
+    if (old == null || (old - price).abs() > 0.000001) {
+      final point =
+          AmmoPricePoint(date: _today(), caliber: caliber, price: price);
+      setState(() {
+        _priceHistory.insert(0, point);
+        if (_priceHistory.length > 500) {
+          _priceHistory.removeRange(500, _priceHistory.length);
+        }
+      });
+      saveAmmoPriceHistory(_priceHistory);
+      showAppToast(context, tr('ammo_price_saved'));
+    }
+  }
+
+  Future<void> _editPriceDialog(String caliber) async {
+    final ctrl = TextEditingController(
+        text: _prices[caliber] == null ? '' : '${_prices[caliber]}');
+    final v = await showDialog<double>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('$caliber · ' + tr('ammo_price_unit')),
+        content: TextField(
+          controller: ctrl,
+          keyboardType:
+              const TextInputType.numberWithOptions(decimal: true),
+          decoration:
+              InputDecoration(labelText: tr('ammo_price_unit')),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(tr('cancel'))),
+          TextButton(
+              onPressed: () =>
+                  Navigator.pop(ctx, double.tryParse(ctrl.text.trim())),
+              child: Text(tr('confirm'))),
+        ],
+      ),
+    );
+    if (v == null || v < 0) return;
+    _setPrice(caliber, v);
+  }
+
+  /// 库存量随时间：出入库记录按日期汇总，当前总量减全部变动得基线，
+  /// 再按日期累计还原（记录只有最近 200 条，曲线起点为最早记录日）。
+  List<TimePoint> _stockSeries() {
+    final byDate = <String, int>{};
+    for (final m in _movements) {
+      byDate[m.date] = (byDate[m.date] ?? 0) + m.delta;
+    }
+    if (byDate.isEmpty) return [];
+    final dates = byDate.keys.toList()..sort();
+    final totalNow = _items.fold<int>(0, (s, e) => s + e.quantity);
+    final sumDeltas = byDate.values.fold<int>(0, (s, e) => s + e);
+    var running = (totalNow - sumDeltas).clamp(0, 100000000);
+    final pts = <TimePoint>[];
+    for (final d in dates) {
+      final dt = DateTime.tryParse(d);
+      if (dt == null) continue;
+      if (pts.isEmpty) pts.add(TimePoint(dt, running.toDouble()));
+      running = (running + byDate[d]!).clamp(0, 100000000);
+      pts.add(TimePoint(dt, running.toDouble()));
+    }
+    return pts;
+  }
+
+  /// 单价随时间：每口径一条线；同一天多次改价只留最后一次。
+  List<TimeSeries> _priceSeries() {
+    final byCal = <String, Map<String, double>>{};
+    for (final p in _priceHistory.reversed) {
+      byCal.putIfAbsent(p.caliber, () => {})[p.date] = p.price;
+    }
+    const palette = <int>[
+      0xFFE86A1C,
+      0xFF2F5DA8,
+      0xFF3E7A4E,
+      0xFF7A2E2E,
+      0xFF6B4FA1,
+      0xFF8C6A2F,
+    ];
+    var i = 0;
+    return byCal.entries.map((e) {
+      final dates = e.value.keys.toList()..sort();
+      final pts = <TimePoint>[];
+      for (final d in dates) {
+        final dt = DateTime.tryParse(d);
+        if (dt == null) continue;
+        pts.add(TimePoint(dt, e.value[d]!));
+      }
+      final color = Color(palette[i++ % palette.length]);
+      return TimeSeries(label: e.key, color: color, points: pts);
+    }).toList();
   }
 
   Future<void> _adjustDialog(AmmoItem item, bool isShoot) async {
@@ -436,32 +668,185 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
               child: Text(tr('ammo_low_prefix') + '$lowCount' + tr('ammo_low_suffix'),
                   style: const TextStyle(color: Colors.red, fontSize: 13)),
             ),
-          if (_items.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Row(
+          // 第 5 项④：补货清单区——低于阈值的条目集中列出。
+          if (lowCount > 0)
+            Card(
+              margin: const EdgeInsets.only(top: 8),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(tr('ammo_restock_title'),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red)),
+                    const SizedBox(height: 4),
+                    ..._items.where((e) => e.isLow).map((e) => Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                              '${e.name} · ${e.caliber} · ${e.quantity} / ${e.lowAt}',
+                              style: const TextStyle(fontSize: 13)),
+                        )),
+                  ],
+                ),
+              ),
+            ),
+          const SizedBox(height: 12),
+          Text(tr('ammo_price_title'),
+              style: const TextStyle(
+                  fontSize: 17, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Builder(builder: (_) {
+            double totalValue = 0;
+            for (final item in _items) {
+              final price = _prices[item.caliber];
+              if (price != null) totalValue += item.quantity * price;
+            }
+            final invCalibers = groups.keys.toList()..sort();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(tr('chart_stock_title'),
-                    style: const TextStyle(
-                        fontSize: 17, fontWeight: FontWeight.bold)),
-                const SizedBox(width: 6),
-                Text('（${tr('chart_stock_unit')}）',
-                    style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                if (totalValue > 0)
+                  Text(tr('ammo_price_total') + ' $totalValue',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFE86A1C))),
+                if (invCalibers.isEmpty)
+                  Text(tr('ammo_price_none'),
+                      style: TextStyle(color: Colors.grey)),
+                for (final cal in invCalibers)
+                  Builder(builder: (_) {
+                    final qty = groups[cal]!
+                        .fold<int>(0, (s2, e) => s2 + e.quantity);
+                    final price = _prices[cal];
+                    final value = price == null ? null : qty * price;
+                    return ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('$cal · $qty' + tr('ammo_stock_rounds')),
+                      subtitle: price == null
+                          ? null
+                          : Text(tr('ammo_price_unit') +
+                              ' $price' +
+                              (value == null
+                                  ? ''
+                                  : ' · ' +
+                                      tr('ammo_price_value') +
+                                      ' $value')),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.edit_outlined, size: 20),
+                        onPressed: () => _editPriceDialog(cal),
+                      ),
+                    );
+                  }),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButton<String>(
+                        value:
+                            _priceCaliber.isEmpty ? null : _priceCaliber,
+                        hint: Text(tr('ammo_caliber_label')),
+                        isExpanded: true,
+                        items: [
+                          for (final c in calibers)
+                            DropdownMenuItem(value: c, child: Text(c)),
+                        ],
+                        onChanged: (v) {
+                          if (v != null) {
+                            setState(() => _priceCaliber = v);
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 110,
+                      child: TextField(
+                        controller: _priceCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        decoration: InputDecoration(
+                            labelText: tr('ammo_price_unit')),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: () {
+                        final cal = _priceCaliber;
+                        final v =
+                            double.tryParse(_priceCtrl.text.trim());
+                        if (cal.isEmpty || v == null || v < 0) return;
+                        _setPrice(cal, v);
+                        _priceCtrl.clear();
+                      },
+                      child: Text(tr('ammo_price_add')),
+                    ),
+                  ],
+                ),
               ],
-            ),
+            );
+          }),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 6,
+            children: [
+              ChoiceChip(
+                label: Text(tr('ammo_chart_mode_stock')),
+                selected: _chartMode == 'stock',
+                onSelected: (_) => setState(() => _chartMode = 'stock'),
+              ),
+              ChoiceChip(
+                label: Text(tr('ammo_chart_mode_price')),
+                selected: _chartMode == 'price',
+                onSelected: (_) => setState(() => _chartMode = 'price'),
+              ),
+              ChoiceChip(
+                label: Text(tr('ammo_chart_mode_all')),
+                selected: _chartMode == 'all',
+                onSelected: (_) => setState(() => _chartMode = 'all'),
+              ),
+            ],
+          ),
+          if (_chartMode == 'stock' || _chartMode == 'all') ...[
+            const SizedBox(height: 12),
+            Text(tr('ammo_chart_stock_title'),
+                style: const TextStyle(
+                    fontSize: 17, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            SimpleBarChart(
-              entries: (groups.entries.map((entry) {
-                final groupTotal =
-                    entry.value.fold<int>(0, (s, e) => s + e.quantity);
-                return BarChartEntry(
-                  label: entry.key,
-                  value: groupTotal.toDouble(),
-                  valueText: '$groupTotal',
-                  warning: entry.value.any((e) => e.isLow),
-                );
-              }).toList()
-                ..sort((a, b) => b.value.compareTo(a.value))),
-            ),
+            Builder(builder: (_) {
+              final pts = _stockSeries();
+              if (pts.isEmpty) {
+                return Text(tr('ammo_chart_empty_stock'),
+                    style: TextStyle(color: Colors.grey));
+              }
+              return TimeLineChart(
+                series: [
+                  TimeSeries(
+                      label: '',
+                      color: const Color(0xFFE86A1C),
+                      points: pts),
+                ],
+                unit: tr('ammo_chart_unit_rounds'),
+              );
+            }),
+          ],
+          if (_chartMode == 'price' || _chartMode == 'all') ...[
+            const SizedBox(height: 12),
+            Text(tr('ammo_chart_price_title'),
+                style: const TextStyle(
+                    fontSize: 17, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Builder(builder: (_) {
+              final s2 = _priceSeries();
+              if (s2.isEmpty) {
+                return Text(tr('ammo_chart_empty_price'),
+                    style: TextStyle(color: Colors.grey));
+              }
+              return TimeLineChart(
+                  series: s2, unit: tr('ammo_chart_unit_price'));
+            }),
           ],
           const SizedBox(height: 12),
           OutlinedButton.icon(
@@ -523,9 +908,9 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
           const SizedBox(height: 8),
           Wrap(
             spacing: 6,
-            children: ['厂弹', '复装']
+            children: ['厂弹', '复装', '弹头', '火药', '弹壳', '底火']
                 .map((k) => ChoiceChip(
-                      label: Text(k == '复装' ? tr('ammo_kind_reload') : tr('ammo_kind_factory')),
+                      label: Text(_kindLabel(k)),
                       selected: _kind == k,
                       onSelected: (_) => setState(() => _kind = k),
                     ))
@@ -602,6 +987,12 @@ class _AmmoInventoryScreenState extends State<AmmoInventoryScreen> {
                                     '${item.name} · ${item.kind}${item.batchNo.isNotEmpty ? ' · ${item.batchNo}' : ''}',
                                     style: const TextStyle(
                                         fontWeight: FontWeight.bold)),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.tune_outlined,
+                                    size: 20),
+                                tooltip: tr('ammo_set_low'),
+                                onPressed: () => _editLowDialog(item),
                               ),
                               IconButton(
                                 icon: const Icon(Icons.delete_outline),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../i18n.dart';
 import '../range_trip_data.dart';
+import '../tools_units.dart';
 import '../sensors_api.dart';
 import '../weather_api.dart';
 import '../widgets/app_top_bar.dart';
@@ -144,7 +145,10 @@ class _WeatherScreenState extends State<WeatherScreen> {
   @override
   Widget build(BuildContext context) {
     final data = _data;
-    return ValueListenableBuilder<String>(
+    // 第 8 项：单位偏好变化时刷新天气显示（温度/风速/气压按偏好换算）。
+    return ValueListenableBuilder<Map<String, String>>(
+      valueListenable: unitPrefsNotifier,
+      builder: (_, __, ___) => ValueListenableBuilder<String>(
       valueListenable: localeNotifier,
       builder: (_, __, ___) => Scaffold(
         appBar: SubPageAppBar(title: tr('weather')),
@@ -204,16 +208,17 @@ class _WeatherScreenState extends State<WeatherScreen> {
                       fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               Text(
-                  '${_fmt1(data.temp)}°C',
+                  data.temp == null ? '—' : fmtTemp(data.temp!),
                   style: const TextStyle(
                       fontSize: 36, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Text(tr('weather_now'),
                   style: const TextStyle(fontWeight: FontWeight.bold)),
               _row(tr('weather_wind'),
-                  '${_fmt1(data.windSpeed)} km/h${data.windDir == null ? '' : ' ${compassDir(data.windDir!)}'}'),
+                  '${data.windSpeed == null ? '—' : fmtWind(data.windSpeed!)}${data.windDir == null ? '' : ' ${compassDir(data.windDir!)}'}'),
               _row(tr('weather_humidity'), '${_fmt1(data.humidity)}%'),
-              _row(tr('weather_pressure'), '${_fmt1(data.pressure)} hPa'),
+              _row(tr('weather_pressure'),
+                  data.pressure == null ? '—' : fmtPressure(data.pressure!)),
               _row(tr('weather_precip'), '${_fmt1(data.precipProb)}%'),
               const SizedBox(height: 16),
               Text(tr('weather_hourly'),
@@ -238,7 +243,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
                             Text(
                                 '${h.time.hour.toString().padLeft(2, '0')}:${h.time.minute.toString().padLeft(2, '0')}',
                                 style: const TextStyle(fontSize: 12)),
-                            Text('${_fmt1(h.temp)}°',
+                            Text(h.temp == null ? '—' : fmtTemp(h.temp!),
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold)),
                             Text('${_fmt1(h.precipProb)}%',
@@ -266,7 +271,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
                                   fontWeight: FontWeight.bold))),
                       Expanded(
                           child: Text(
-                              '${_fmt1(d.tempMin)}° / ${_fmt1(d.tempMax)}°')),
+                              '${d.tempMin == null ? '—' : fmtTemp(d.tempMin!)} / ${d.tempMax == null ? '—' : fmtTemp(d.tempMax!)}')),
                       Text('${_fmt1(d.precipProb)}%',
                           style: const TextStyle(color: Colors.grey)),
                     ],
@@ -289,7 +294,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _row(String label, String value) => Padding(

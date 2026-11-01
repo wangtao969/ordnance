@@ -408,6 +408,9 @@ class RangeScore {
   /// 关联的复装批次号（空=未关联）：配方卡靠它找实测成绩。
   final String batchNo;
 
+  /// 指南针记下的射向（空=未记），如“123° SE”。
+  final String heading;
+
   RangeScore({
     String? id,
     required this.gunName,
@@ -424,6 +427,7 @@ class RangeScore {
     this.weather = '',
     this.wind = '',
     this.batchNo = '',
+    this.heading = '',
   })  : id = id ?? DateTime.now().microsecondsSinceEpoch.toString(),
         date = date ?? DateTime.now();
 
@@ -443,6 +447,7 @@ class RangeScore {
         'weather': weather,
         'wind': wind,
         'batchNo': batchNo,
+        'heading': heading,
       };
 
   /// 旧记录没有 id 时的稳定派生：同一条成绩重读后 id 不变，
@@ -475,6 +480,7 @@ class RangeScore {
         weather: j['weather'] as String? ?? '',
         wind: j['wind'] as String? ?? '',
         batchNo: j['batchNo'] as String? ?? '',
+        heading: j['heading'] as String? ?? '',
       );
 }
 
@@ -557,6 +563,10 @@ class CommunityPost {
   String location;
   /// 发帖时附加的天气快照文字（'' = 无）。
   String weather;
+  /// 投票（第 11 项）：选项 2–4 个；pollVoters 为账号 id → 选项下标，
+  /// 每人一票，改投则移票；空 = 普通帖子。
+  List<String> pollOptions;
+  Map<String, int> pollVoters;
   /// 成就自动动态标记：'' = 普通动态；非空 = 成就 id，内容为成就获得动态。
   String achievement;
 
@@ -583,12 +593,16 @@ class CommunityPost {
     this.videoPath = '',
     this.location = '',
     this.weather = '',
+    List<String>? pollOptions,
+    Map<String, int>? pollVoters,
     this.achievement = '',
   })  : images = images ?? [],
         likedBy = likedBy ?? <String>{},
         favoritedBy = favoritedBy ?? <String>{},
         comments = comments ?? [],
-        reportReasons = reportReasons ?? [];
+        reportReasons = reportReasons ?? [],
+        pollOptions = pollOptions ?? [],
+        pollVoters = pollVoters ?? {};
 
   List<String> get tags => parseTags(content);
 
@@ -619,6 +633,8 @@ class CommunityPost {
         'videoPath': videoPath,
         'location': location,
         'weather': weather,
+        'pollOptions': pollOptions,
+        'pollVoters': pollVoters,
         'achievement': achievement,
       };
 
@@ -652,6 +668,9 @@ class CommunityPost {
         videoPath: j['videoPath'] as String? ?? '',
         location: j['location'] as String? ?? '',
         weather: j['weather'] as String? ?? '',
+        pollOptions: (j['pollOptions'] as List? ?? []).cast<String>(),
+        pollVoters: (j['pollVoters'] as Map? ?? {})
+            .map((k, v) => MapEntry(k.toString(), (v as num).toInt())),
         achievement: j['achievement'] as String? ?? '',
       );
 }
@@ -1509,6 +1528,7 @@ class CommunityStore extends ChangeNotifier {
     String location = '',
     String weather = '',
     String videoPath = '',
+    List<String> pollOptions = const [],
   }) {
     final author = current;
     if (author == null) return tr('store_err_not_logged');
@@ -1536,6 +1556,7 @@ class CommunityStore extends ChangeNotifier {
       location: location,
       weather: weather,
       videoPath: videoPath,
+      pollOptions: pollOptions,
     );
     posts.insert(0, post);
     draft = null;
@@ -1569,6 +1590,15 @@ class CommunityStore extends ChangeNotifier {
         }
       }
     }
+    notifyListeners();
+  }
+
+  /// 投票（第 11 项）：每人一票，改投则移票；未登录不做声。
+  void votePoll(CommunityPost post, int index) {
+    final me = current;
+    if (me == null) return;
+    if (index < 0 || index >= post.pollOptions.length) return;
+    post.pollVoters[me.id] = index;
     notifyListeners();
   }
 

@@ -188,6 +188,10 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen>
         final myFavorites = communityStore.posts
             .where((p) => p.favoritedBy.contains(account.id))
             .toList();
+        // 点赞数（第 12 项）：该账号点过赞的帖子数；可见规则与收藏一致。
+        final myLikes = communityStore.posts
+            .where((p) => p.likedBy.contains(account.id))
+            .toList();
         final followers = communityStore.accounts
             .where((a) => a.followingIds.contains(account.id))
             .toList();
@@ -353,6 +357,8 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen>
                       () => _showAccountList(tr('profile_stat_followers'), followers)),
                   _Stat(tr('profile_stat_favorites'),
                       canSeeFavorites ? '${myFavorites.length}' : '—', null),
+                  _Stat(tr('profile_stat_likes'),
+                      canSeeFavorites ? '${myLikes.length}' : '—', null),
                 ],
               ),
               if (!isMine && me != null) ...[

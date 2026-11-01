@@ -26,6 +26,8 @@ const Map<String, String> categoryEn = {
 const List<Gun> guns = [
   Gun(
     name: '格洛克 17',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '9×19mm',
@@ -46,6 +48,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'M1911A1',
+    twist: '1:16"',
+    twistDir: '右旋',
     vendor: 'Colt',
     category: '手枪',
     caliber: '.45 ACP',
@@ -65,6 +69,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'AK-47',
+    twist: '1:9.45"',
+    twistDir: '右旋',
     vendor: '卡拉什尼科夫',
     category: '步枪',
     caliber: '7.62×39mm',
@@ -85,6 +91,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'M4 卡宾枪',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Colt',
     category: '步枪',
     caliber: '5.56×45mm',
@@ -143,6 +151,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '雷明顿 700',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Remington',
     category: '狙击步枪',
     caliber: '.308 Winchester',
@@ -422,6 +432,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '巴雷特 M82A1',
+    twist: '1:15"',
+    twistDir: '右旋',
     vendor: 'Barrett',
     category: '反器材步枪',
     caliber: '.50 BMG',
@@ -661,6 +673,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'MP5',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Heckler & Koch',
     category: '冲锋枪',
     caliber: '9×19mm',
@@ -700,6 +714,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'M249 SAW',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'FN',
     category: '机枪',
     caliber: '5.56×45mm',
@@ -778,6 +794,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '贝雷塔 92FS',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Beretta',
     category: '手枪',
     caliber: '9×19mm',
@@ -797,6 +815,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'SIG P226',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm',
@@ -816,6 +836,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'CZ 75',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'CZ',
     category: '手枪',
     caliber: '9×19mm',
@@ -835,6 +857,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'M1 加兰德',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Springfield',
     category: '步枪',
     caliber: '.30-06 Springfield',
@@ -854,6 +878,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '莫辛-纳甘 M91/30',
+    twist: '1:9.45"',
+    twistDir: '右旋',
     vendor: '伊热夫斯克',
     category: '步枪',
     caliber: '7.62×54mmR',
@@ -873,6 +899,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '斯太尔 AUG',
+    twist: '1:9"',
+    twistDir: '右旋',
     vendor: 'Steyr',
     category: '步枪',
     caliber: '5.56×45mm',
@@ -911,6 +939,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '巴雷特 M95',
+    twist: '1:15"',
+    twistDir: '右旋',
     vendor: 'Barrett',
     category: '反器材步枪',
     caliber: '.50 BMG',
@@ -957,6 +987,8 @@ const List<Gun> guns = [
 // Glock
   Gun(
     name: '格洛克 19',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '9×19mm',
@@ -977,6 +1009,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 26',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '9×19mm',
@@ -997,6 +1031,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 43X',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '9×19mm',
@@ -1017,6 +1053,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 48',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '9×19mm',
@@ -1037,6 +1075,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 34',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '9×19mm',
@@ -1057,6 +1097,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 18',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '9×19mm',
@@ -1077,6 +1119,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 19X',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '9×19mm',
@@ -1097,6 +1141,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 20',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '10mm Auto',
@@ -1117,6 +1163,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 21',
+    twist: '1:15.75"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '.45 ACP',
@@ -1137,6 +1185,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 22',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '.40 S&W',
@@ -1157,6 +1207,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 23',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '.40 S&W',
@@ -1177,6 +1229,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 24',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '.40 S&W',
@@ -1197,6 +1251,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 25',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '.380 ACP',
@@ -1217,6 +1273,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 27',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '.40 S&W',
@@ -1237,6 +1295,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 28',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '.380 ACP',
@@ -1257,6 +1317,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 29',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '10mm Auto',
@@ -1277,6 +1339,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 30',
+    twist: '1:15.75"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '.45 ACP',
@@ -1297,6 +1361,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 30S',
+    twist: '1:15.75"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '.45 ACP',
@@ -1317,6 +1383,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 31',
+    twist: '1:15.98"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '.357 SIG',
@@ -1337,6 +1405,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 32',
+    twist: '1:15.98"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '.357 SIG',
@@ -1357,6 +1427,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 33',
+    twist: '1:15.98"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '.357 SIG',
@@ -1377,6 +1449,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 35',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '.40 S&W',
@@ -1397,6 +1471,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 36',
+    twist: '1:15.75"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '.45 ACP',
@@ -1417,6 +1493,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 37',
+    twist: '1:15.75"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '.45 GAP',
@@ -1437,6 +1515,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 38',
+    twist: '1:15.75"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '.45 GAP',
@@ -1457,6 +1537,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 39',
+    twist: '1:15.75"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '.45 GAP',
@@ -1477,6 +1559,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 40',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '10mm Auto',
@@ -1497,6 +1581,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 41',
+    twist: '1:15.75"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '.45 ACP',
@@ -1517,6 +1603,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 42',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '.380 ACP',
@@ -1537,6 +1625,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 43',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '9×19mm',
@@ -1577,6 +1667,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 45',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '9×19mm',
@@ -1597,6 +1689,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 46',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '9×19mm',
@@ -1617,6 +1711,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 47',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '9×19mm',
@@ -1637,6 +1733,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 49',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '9×19mm',
@@ -1657,6 +1755,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 17L',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '9×19mm',
@@ -1677,6 +1777,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 17M',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '9×19mm',
@@ -1697,6 +1799,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '格洛克 19M',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'Glock',
     category: '手枪',
     caliber: '9×19mm',
@@ -1719,6 +1823,8 @@ const List<Gun> guns = [
 // SIG Sauer
   Gun(
     name: '西格绍尔 P320',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm',
@@ -1739,6 +1845,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 P365',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm',
@@ -1759,6 +1867,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 P365 XL',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm',
@@ -1779,6 +1889,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 P229',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm',
@@ -1819,6 +1931,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 P220',
+    twist: '1:16"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '.45 ACP',
@@ -1839,6 +1953,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 P225 / P6',
+    twist: '1:9.84"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm',
@@ -1859,6 +1975,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 P228',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm',
@@ -1919,6 +2037,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 P238',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '.380 ACP',
@@ -1939,6 +2059,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 P239',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm / .40 S&W / .357 SIG',
@@ -1959,6 +2081,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 P250',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm / .40 S&W / .45 ACP',
@@ -1979,6 +2103,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 P210',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm',
@@ -1999,6 +2125,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 M17',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm',
@@ -2019,6 +2147,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 M18',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm',
@@ -2039,6 +2169,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 P320 XFive Legion',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm',
@@ -2059,6 +2191,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 P320 XFive DH3',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm',
@@ -2079,6 +2213,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 P320 XFive SXG',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm',
@@ -2099,6 +2235,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 P320 AXG Carry',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm',
@@ -2119,6 +2257,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 P320 AXG Legion',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm',
@@ -2139,6 +2279,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 P226 Legion',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm',
@@ -2159,6 +2301,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 P226-XFive Legion',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm',
@@ -2179,6 +2323,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 P226 XCarry Legion',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm',
@@ -2199,6 +2345,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 P365 XMacro',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm',
@@ -2219,6 +2367,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 P365 Fuse',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '手枪',
     caliber: '9×19mm',
@@ -2239,6 +2389,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 MPX',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '冲锋枪',
     caliber: '9×19mm',
@@ -2259,6 +2411,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 MPX K',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '冲锋枪',
     caliber: '9×19mm',
@@ -2279,6 +2433,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 MPX Copperhead K',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '冲锋枪',
     caliber: '9×19mm',
@@ -2299,6 +2455,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 MCX Virtus Patrol',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '步枪',
     caliber: '5.56 NATO（可换 .300 BLK / 7.62×39mm 枪管）',
@@ -2324,6 +2482,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 MCX Rattler',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '步枪',
     caliber: '5.56 NATO',
@@ -2344,6 +2504,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 MCX Rattler LT',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '步枪',
     caliber: '5.56 NATO / .300 BLK / 7.62×39mm',
@@ -2364,6 +2526,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 MCX-SPEAR LT',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '步枪',
     caliber: '5.56 NATO / .300 BLK / 7.62×39mm',
@@ -2384,6 +2548,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 SIG516 G3',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '步枪',
     caliber: '5.56 NATO',
@@ -2404,6 +2570,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 SIG716i TREAD',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '步枪',
     caliber: '7.62×51mm NATO',
@@ -2424,6 +2592,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 SG 550',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -2444,6 +2614,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 SG 551',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -2464,6 +2636,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 SG 553',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '步枪',
     caliber: '5.56×45mm NATO（另有 7.62×39mm R 型、.300 BLK BK 型）',
@@ -2484,6 +2658,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 SIG 556',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '步枪',
     caliber: '5.56 NATO',
@@ -2504,6 +2680,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 M400 TREAD',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '步枪',
     caliber: '5.56 NATO',
@@ -2524,6 +2702,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西格绍尔 Cross',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '步枪',
     caliber: '.308 Win / 6.5 Creedmoor / .277 SIG Fury',
@@ -2748,6 +2928,8 @@ const List<Gun> guns = [
 // CZ
   Gun(
     name: 'CZ P-10 C',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'CZ',
     category: '手枪',
     caliber: '9×19mm',
@@ -2768,6 +2950,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'CZ P-10 F',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'CZ',
     category: '手枪',
     caliber: '9×19mm',
@@ -2788,6 +2972,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'CZ Shadow 2',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'CZ',
     category: '手枪',
     caliber: '9×19mm',
@@ -2808,6 +2994,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'CZ 蝎式 EVO 3',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'CZ',
     category: '冲锋枪',
     caliber: '9×19mm',
@@ -2828,6 +3016,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'CZ Bren 2',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'CZ',
     category: '步枪',
     caliber: '5.56×45mm',
@@ -2850,6 +3040,8 @@ const List<Gun> guns = [
 // Smith & Wesson
   Gun(
     name: '史密斯威森 M&P 9 M2.0',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Smith & Wesson',
     category: '手枪',
     caliber: '9×19mm',
@@ -2870,6 +3062,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '史密斯威森 M&P Shield Plus',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Smith & Wesson',
     category: '手枪',
     caliber: '9×19mm',
@@ -2910,6 +3104,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '史密斯威森 SD9 VE',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Smith & Wesson',
     category: '手枪',
     caliber: '9×19mm',
@@ -2930,6 +3126,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '史密斯威森 Bodyguard 2.0',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Smith & Wesson',
     category: '手枪',
     caliber: '.380 ACP',
@@ -2950,6 +3148,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '史密斯威森 Model 686',
+    twist: '1:18.75"',
+    twistDir: '右旋',
     vendor: 'Smith & Wesson',
     category: '手枪',
     caliber: '.357 Magnum',
@@ -2972,6 +3172,8 @@ const List<Gun> guns = [
 // Walther
   Gun(
     name: '瓦尔特 PDP',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Walther',
     category: '手枪',
     caliber: '9×19mm',
@@ -2992,6 +3194,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '瓦尔特 PDP F-Series',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Walther',
     category: '手枪',
     caliber: '9×19mm',
@@ -3012,6 +3216,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '瓦尔特 PPK',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Walther',
     category: '手枪',
     caliber: '.380 ACP',
@@ -3032,6 +3238,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '瓦尔特 PPS M2',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Walther',
     category: '手枪',
     caliber: '9×19mm',
@@ -3216,6 +3424,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'HK45',
+    twist: '1:16"',
+    twistDir: '右旋',
     vendor: 'Heckler & Koch',
     category: '手枪',
     caliber: '.45 ACP',
@@ -3236,6 +3446,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'MR556A1',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Heckler & Koch',
     category: '步枪',
     caliber: '5.56×45mm',
@@ -3258,6 +3470,8 @@ const List<Gun> guns = [
 // FN Herstal
   Gun(
     name: 'FN 509',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'FN Herstal',
     category: '手枪',
     caliber: '9×19mm',
@@ -3298,6 +3512,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'FNX-45战术型',
+    twist: '1:16"',
+    twistDir: '右旋',
     vendor: 'FN Herstal',
     category: '手枪',
     caliber: '.45 ACP',
@@ -3318,6 +3534,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'SCAR 16S',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'FN Herstal',
     category: '步枪',
     caliber: '5.56×45mm',
@@ -3338,6 +3556,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'SCAR 17S',
+    twist: '1:12"',
+    twistDir: '右旋',
     vendor: 'FN Herstal',
     category: '步枪',
     caliber: '7.62×51mm',
@@ -3564,6 +3784,8 @@ const List<Gun> guns = [
 // Ruger
   Gun(
     name: '鲁格-57',
+    twist: '1:9"',
+    twistDir: '右旋',
     vendor: 'Ruger',
     category: '手枪',
     caliber: '5.7×28mm',
@@ -3584,6 +3806,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'MAX-9',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Ruger',
     category: '手枪',
     caliber: '9×19mm',
@@ -3604,6 +3828,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '10/22',
+    twist: '1:16"',
+    twistDir: '右旋',
     vendor: 'Ruger',
     category: '步枪',
     caliber: '.22 LR',
@@ -3830,6 +4056,8 @@ const List<Gun> guns = [
 // Remington
   Gun(
     name: '雷明顿 700 Alpha 1',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Remington',
     category: '步枪',
     caliber: '6.5 Creedmoor',
@@ -3972,6 +4200,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '莫斯伯格 MC2c',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Mossberg',
     category: '手枪',
     caliber: '9×19mm',
@@ -3994,6 +4224,8 @@ const List<Gun> guns = [
 // Winchester
   Gun(
     name: '温彻斯特 Model 70',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Winchester',
     category: '步枪',
     caliber: '.243 Winchester',
@@ -4014,6 +4246,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '温彻斯特 Model 94',
+    twist: '1:12"',
+    twistDir: '右旋',
     vendor: 'Winchester',
     category: '步枪',
     caliber: '.30-30 Winchester',
@@ -4136,6 +4370,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '贝内利 Lupo',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Benelli',
     category: '步枪',
     caliber: '.300 Winchester Magnum',
@@ -4240,6 +4476,8 @@ const List<Gun> guns = [
 // Tikka
   Gun(
     name: '蒂卡 T3x Lite',
+    twist: '1:11"',
+    twistDir: '右旋',
     vendor: 'Tikka',
     category: '步枪',
     caliber: '.308 Winchester',
@@ -4260,6 +4498,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '蒂卡 T3x Tac A1',
+    twist: '1:11"',
+    twistDir: '右旋',
     vendor: 'Tikka',
     category: '精确射手步枪',
     caliber: '.308 Winchester / 6.5 Creedmoor',
@@ -4300,6 +4540,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '蒂卡 T3x CTR',
+    twist: '1:11"',
+    twistDir: '右旋',
     vendor: 'Tikka',
     category: '步枪',
     caliber: '.308 Winchester / 6.5 Creedmoor',
@@ -4322,6 +4564,8 @@ const List<Gun> guns = [
 // Steyr
   Gun(
     name: '斯太尔 HS .50 M1',
+    twist: '1:15"',
+    twistDir: '右旋',
     vendor: 'Steyr',
     category: '反器材步枪',
     caliber: '.50 BMG',
@@ -4342,6 +4586,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '斯太尔 Scout',
+    twist: '1:12"',
+    twistDir: '右旋',
     vendor: 'Steyr',
     category: '步枪',
     caliber: '.308 Winchester',
@@ -4362,6 +4608,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '斯太尔 SSG 08',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Steyr',
     category: '狙击步枪',
     caliber: '.308 Winchester',
@@ -4382,6 +4630,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '斯太尔 M9-A1',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Steyr',
     category: '手枪',
     caliber: '9×19mm',
@@ -4404,6 +4654,8 @@ const List<Gun> guns = [
 // Barrett
   Gun(
     name: '巴雷特 MRAD',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Barrett',
     category: '狙击步枪',
     caliber: '.308 Winchester / 6.5 Creedmoor / .300 Winchester Magnum / .300 Norma Magnum / .300 PRC / .338 Lapua Magnum / .338 Norma Magnum',
@@ -4434,6 +4686,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '巴雷特 M99',
+    twist: '1:15"',
+    twistDir: '右旋',
     vendor: 'Barrett',
     category: '反器材步枪',
     caliber: '.50 BMG',
@@ -4474,6 +4728,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '巴雷特 M107A1',
+    twist: '1:15"',
+    twistDir: '右旋',
     vendor: 'Barrett',
     category: '反器材步枪',
     caliber: '.50 BMG（另有 .416 Barrett 选配）',
@@ -4494,6 +4750,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '巴雷特 M107',
+    twist: '1:15"',
+    twistDir: '右旋',
     vendor: 'Barrett',
     category: '反器材步枪',
     caliber: '.50 BMG',
@@ -4514,6 +4772,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '巴雷特 M107CQ',
+    twist: '1:15"',
+    twistDir: '右旋',
     vendor: 'Barrett',
     category: '反器材步枪',
     caliber: '.50 BMG',
@@ -4534,6 +4794,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '巴雷特 M82A1CQ',
+    twist: '1:15"',
+    twistDir: '右旋',
     vendor: 'Barrett',
     category: '反器材步枪',
     caliber: '.50 BMG',
@@ -4554,6 +4816,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '巴雷特 M82A1M',
+    twist: '1:15"',
+    twistDir: '右旋',
     vendor: 'Barrett',
     category: '反器材步枪',
     caliber: '.50 BMG',
@@ -4623,6 +4887,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '巴雷特 MRAD SMR',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Barrett',
     category: '狙击步枪',
     caliber: '.308 Winchester / 6.5 Creedmoor / .300 Winchester Magnum / .300 Norma Magnum / .300 PRC / .338 Lapua Magnum / .338 Norma Magnum',
@@ -4643,6 +4909,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '巴雷特 REC7 Gen II',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Barrett',
     category: '步枪',
     caliber: '5.56×45mm / 6.8 SPC',
@@ -4663,6 +4931,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '巴雷特 REC7 Gen II DI',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Barrett',
     category: '步枪',
     caliber: '5.56×45mm / .300 AAC Blackout',
@@ -4683,6 +4953,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '巴雷特 REC7 DI 手枪',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Barrett',
     category: '步枪',
     caliber: '5.56×45mm / .300 AAC Blackout',
@@ -4723,6 +4995,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '巴雷特 REC7 DI',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Barrett',
     category: '步枪',
     caliber: '5.56×45mm',
@@ -4743,6 +5017,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '巴雷特 REC10',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Barrett',
     category: '步枪',
     caliber: '7.62×51mm',
@@ -4765,6 +5041,8 @@ const List<Gun> guns = [
 // Accuracy International
   Gun(
     name: '精确国际 AXMC',
+    twist: '1:9.35"',
+    twistDir: '右旋',
     vendor: 'Accuracy International',
     category: '狙击步枪',
     caliber: '.338 Lapua Magnum / 6.5 Creedmoor',
@@ -4790,6 +5068,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '精确国际 AXSR',
+    twist: '1:9.35"',
+    twistDir: '右旋',
     vendor: 'Accuracy International',
     category: '狙击步枪',
     caliber: '.338 Lapua Magnum',
@@ -4819,6 +5099,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '精确国际 AT-X',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Accuracy International',
     category: '狙击步枪',
     caliber: '6.5 Creedmoor',
@@ -4839,6 +5121,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '精确国际 AX50',
+    twist: '1:15"',
+    twistDir: '右旋',
     vendor: 'Accuracy International',
     category: '反器材步枪',
     caliber: '.50 BMG',
@@ -4859,6 +5143,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '精确国际 AW 北极作战',
+    twist: '1:12"',
+    twistDir: '右旋',
     vendor: 'Accuracy International',
     category: '狙击步枪',
     caliber: '7.62×51mm NATO / .308 Winchester / .300 Winchester Magnum / .338 Lapua Magnum',
@@ -4879,6 +5165,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '精确国际 AWP 警用型',
+    twist: '1:12"',
+    twistDir: '右旋',
     vendor: 'Accuracy International',
     category: '狙击步枪',
     caliber: '7.62×51mm NATO / .308 Winchester',
@@ -4899,6 +5187,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '精确国际 AWS 微声型',
+    twist: '1:12"',
+    twistDir: '右旋',
     vendor: 'Accuracy International',
     category: '狙击步枪',
     caliber: '7.62×51mm NATO / .308 Winchester',
@@ -4919,6 +5209,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '精确国际 AWC 隐蔽型',
+    twist: '1:12"',
+    twistDir: '右旋',
     vendor: 'Accuracy International',
     category: '狙击步枪',
     caliber: '7.62×51mm NATO / .308 Winchester',
@@ -4939,6 +5231,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '精确国际 AE Mk III 执法型',
+    twist: '1:12"',
+    twistDir: '右旋',
     vendor: 'Accuracy International',
     category: '狙击步枪',
     caliber: '7.62×51mm NATO',
@@ -4959,6 +5253,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '精确国际 AT 战术型',
+    twist: '1:12"',
+    twistDir: '右旋',
     vendor: 'Accuracy International',
     category: '狙击步枪',
     caliber: '.308 Winchester / 6.5 Creedmoor',
@@ -4979,6 +5275,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '精确国际 AX308',
+    twist: '1:12"',
+    twistDir: '右旋',
     vendor: 'Accuracy International',
     category: '狙击步枪',
     caliber: '.308 Winchester',
@@ -4999,6 +5297,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '精确国际 AX338',
+    twist: '1:9.375"',
+    twistDir: '右旋',
     vendor: 'Accuracy International',
     category: '狙击步枪',
     caliber: '.338 Lapua Magnum',
@@ -5019,6 +5319,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '精确国际 AX MKIII',
+    twist: '1:9.35"',
+    twistDir: '右旋',
     vendor: 'Accuracy International',
     category: '狙击步枪',
     caliber: '.338 Lapua Magnum（快换可改 .300 WM、.308、.300 Norma、.338 Norma、6.5 CM）',
@@ -5048,6 +5350,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '精确国际 AXSA',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Accuracy International',
     category: '狙击步枪',
     caliber: '6.5 Creedmoor',
@@ -5068,6 +5372,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '精确国际 AT-XC 竞赛型',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Accuracy International',
     category: '精确射手步枪',
     caliber: '6.5 Creedmoor / 6mm Creedmoor',
@@ -5088,6 +5394,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '精确国际 AW50',
+    twist: '1:15"',
+    twistDir: '右旋',
     vendor: 'Accuracy International',
     category: '反器材步枪',
     caliber: '.50 BMG',
@@ -5108,6 +5416,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '精确国际 AS50',
+    twist: '1:15"',
+    twistDir: '右旋',
     vendor: 'Accuracy International',
     category: '反器材步枪',
     caliber: '.50 BMG',
@@ -5128,6 +5438,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '精确国际 AX ELR',
+    twist: '1:15"',
+    twistDir: '右旋',
     vendor: 'Accuracy International',
     category: '反器材步枪',
     caliber: '.50 BMG（QUICKLOC 可改 .375/.408 CheyTac、.416 Barrett）',
@@ -5155,6 +5467,8 @@ const List<Gun> guns = [
 // Daniel Defense
   Gun(
     name: '丹尼尔防务 DDM4 V7',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Daniel Defense',
     category: '步枪',
     caliber: '5.56×45mm',
@@ -5175,6 +5489,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '丹尼尔防务 DDM4 PDW',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Daniel Defense',
     category: '步枪',
     caliber: '.300 Blackout',
@@ -5484,6 +5800,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '鲁格精准步枪',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Ruger',
     category: '精确射手步枪',
     caliber: '6.5 Creedmoor（另有 6.5 PRC、.308 Win 等）',
@@ -5655,6 +5973,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '沙漠科技 SRS A2',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Desert Tech',
     category: '狙击步枪',
     caliber: '6.5 Creedmoor（多口径无托系统，另有 .308、.300 WM、.338 LM 等）',
@@ -5705,6 +6025,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '斯太尔 SSG M1 A2',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Steyr',
     category: '狙击步枪',
     caliber: '6.5 Creedmoor（另有 .308、.300 Norma、.338 LM）',
@@ -6149,6 +6471,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'FN FAL 50.00 标准型',
+    twist: '1:12"',
+    twistDir: '右旋',
     vendor: 'FN Herstal',
     category: '步枪',
     caliber: '7.62×51mm NATO',
@@ -6169,6 +6493,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'FN FAL 50.63 伞兵型',
+    twist: '1:12"',
+    twistDir: '右旋',
     vendor: 'FN Herstal',
     category: '步枪',
     caliber: '7.62×51mm NATO',
@@ -6189,6 +6515,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'FN FAL 50.41 重枪管型',
+    twist: '1:12"',
+    twistDir: '右旋',
     vendor: 'FN Herstal',
     category: '步枪',
     caliber: '7.62×51mm NATO',
@@ -6369,6 +6697,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'M40',
+    twist: '1:12"',
+    twistDir: '右旋',
     vendor: 'Remington',
     category: '狙击步枪',
     caliber: '7.62×51mm NATO',
@@ -6389,6 +6719,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'M40A1',
+    twist: '1:12"',
+    twistDir: '右旋',
     vendor: 'Remington',
     category: '狙击步枪',
     caliber: '7.62×51mm NATO',
@@ -6409,6 +6741,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'M40A5',
+    twist: '1:12"',
+    twistDir: '右旋',
     vendor: 'Remington',
     category: '狙击步枪',
     caliber: '7.62×51mm NATO',
@@ -6449,6 +6783,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '雷明顿 700 SPS',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Remington',
     category: '步枪',
     caliber: '.308 Winchester',
@@ -6469,6 +6805,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '雷明顿 700 5-R 不锈钢二代',
+    twist: '1:11.25"',
+    twistDir: '右旋',
     vendor: 'Remington',
     category: '精确射手步枪',
     caliber: '.308 Winchester',
@@ -6489,6 +6827,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '雷明顿 700 警用 5R',
+    twist: '1:11.25"',
+    twistDir: '右旋',
     vendor: 'Remington',
     category: '精确射手步枪',
     caliber: '.308 Winchester',
@@ -6609,6 +6949,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '豪华 M1500 HS 精确型',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Howa',
     category: '步枪',
     caliber: '.308 Winchester / 6.5 Creedmoor',
@@ -6629,6 +6971,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '豪华 M1500 碳纤维潜行者',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Howa',
     category: '步枪',
     caliber: '.308 Winchester',
@@ -6649,6 +6993,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '豪华 M1500 APC 底盘型',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Howa',
     category: '精确射手步枪',
     caliber: '.308 Winchester',
@@ -6689,6 +7035,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '鲁格 SFAR 16.1 英寸型',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Ruger',
     category: '步枪',
     caliber: '.308 Winchester / 7.62 NATO / 6.5 Creedmoor',
@@ -6709,6 +7057,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '莫斯伯格 MVP 巡逻型',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Mossberg',
     category: '步枪',
     caliber: '.308 Winchester / 7.62 NATO',
@@ -6729,6 +7079,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '温彻斯特 M70 羽量级',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Winchester',
     category: '步枪',
     caliber: '.308 Winchester',
@@ -6749,6 +7101,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '温彻斯特 M70 羽量级紧凑型',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Winchester',
     category: '步枪',
     caliber: '.308 Winchester',
@@ -7089,6 +7443,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '毛瑟标准型',
+    twist: '1:9.45"',
+    twistDir: '右旋',
     vendor: 'Mauser',
     category: '步枪',
     caliber: '7.92×57mm',
@@ -7289,6 +7645,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'FN 1924型步枪',
+    twist: '1:9.45"',
+    twistDir: '右旋',
     vendor: 'FN Herstal',
     category: '步枪',
     caliber: '7.92×57mm',
@@ -7329,6 +7687,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '西班牙 M1943 步枪',
+    twist: '1:9.45"',
+    twistDir: '右旋',
     vendor: 'Oviedo',
     category: '步枪',
     caliber: '7.92×57mm',
@@ -7349,6 +7709,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '土耳其 M1938 步枪',
+    twist: '1:9.45"',
+    twistDir: '右旋',
     vendor: 'MKEK',
     category: '步枪',
     caliber: '7.92×57mm',
@@ -7389,6 +7751,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '波斯 M49 卡宾枪',
+    twist: '1:9.45"',
+    twistDir: '右旋',
     vendor: 'Iran',
     category: '步枪',
     caliber: '7.92×57mm',
@@ -7429,6 +7793,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '南斯拉夫 M48 步枪',
+    twist: '1:9.45"',
+    twistDir: '右旋',
     vendor: 'Zastava',
     category: '步枪',
     caliber: '7.92×57mm',
@@ -7489,6 +7855,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'FN-49 埃及合同型',
+    twist: '1:9.45"',
+    twistDir: '右旋',
     vendor: 'FN Herstal',
     category: '步枪',
     caliber: '7.92×57mm',
@@ -7843,6 +8211,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '温彻斯特 XPR',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Winchester',
     category: '步枪',
     caliber: '.270 Winchester（主打之一，多口径）',
@@ -7883,6 +8253,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '温彻斯特 1886',
+    twist: '1:20"',
+    twistDir: '右旋',
     vendor: 'Winchester',
     category: '步枪',
     caliber: '.45-70 Government（多口径）',
@@ -7923,6 +8295,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '温彻斯特 1895',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Winchester',
     category: '步枪',
     caliber: '.30-06 Springfield（主打 Grade I 版；另有 .405 Win）',
@@ -7943,6 +8317,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '温彻斯特 1885 低墙',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Winchester',
     category: '步枪',
     caliber: '6.5 Creedmoor（主打版；另有 .22 Hornet 等）',
@@ -7963,6 +8339,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '温彻斯特野猫',
+    twist: '1:16"',
+    twistDir: '右旋',
     vendor: 'Winchester',
     category: '步枪',
     caliber: '.22 LR',
@@ -7983,6 +8361,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '温彻斯特专家',
+    twist: '1:16"',
+    twistDir: '右旋',
     vendor: 'Winchester',
     category: '步枪',
     caliber: '.22 LR',
@@ -8143,6 +8523,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '马林 336 经典型',
+    twist: '1:12"',
+    twistDir: '右旋',
     vendor: 'Marlin',
     category: '步枪',
     caliber: '.30-30 Winchester',
@@ -8163,6 +8545,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '马林 1895',
+    twist: '1:20"',
+    twistDir: '右旋',
     vendor: 'Marlin',
     category: '步枪',
     caliber: '.45-70 Government',
@@ -8183,6 +8567,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '马林 1894 经典型',
+    twist: '1:20"',
+    twistDir: '右旋',
     vendor: 'Marlin',
     category: '步枪',
     caliber: '.44 Magnum / .44 Special（主打版；另有 .357 Mag / .45 Colt）',
@@ -8203,6 +8589,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '马林 60',
+    twist: '1:16"',
+    twistDir: '右旋',
     vendor: 'Marlin',
     category: '步枪',
     caliber: '.22 LR',
@@ -8223,6 +8611,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '马林 795',
+    twist: '1:16"',
+    twistDir: '右旋',
     vendor: 'Marlin',
     category: '步枪',
     caliber: '.22 LR',
@@ -8243,6 +8633,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '马林 XT-22',
+    twist: '1:16"',
+    twistDir: '右旋',
     vendor: 'Marlin',
     category: '步枪',
     caliber: '.22 LR（另有 .22 WMR 的 XT-22M）',
@@ -8263,6 +8655,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '马林 XT-17',
+    twist: '1:9"',
+    twistDir: '右旋',
     vendor: 'Marlin',
     category: '步枪',
     caliber: '.17 HMR',
@@ -8283,6 +8677,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '马林 39A 金色型',
+    twist: '1:16"',
+    twistDir: '右旋',
     vendor: 'Marlin',
     category: '步枪',
     caliber: '.22 S / L / LR',
@@ -8303,6 +8699,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '马林 444',
+    twist: '1:20"',
+    twistDir: '右旋',
     vendor: 'Marlin',
     category: '步枪',
     caliber: '.444 Marlin',
@@ -8403,6 +8801,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '蒂卡 T3x 猎人',
+    twist: '1:11"',
+    twistDir: '右旋',
     vendor: 'Tikka',
     category: '步枪',
     caliber: '.308 Win',
@@ -8423,6 +8823,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '蒂卡 T3x 超轻型',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Tikka',
     category: '步枪',
     caliber: '6.5 Creedmoor',
@@ -8443,6 +8845,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '蒂卡 T3x 害兽型',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Tikka',
     category: '精确射手步枪',
     caliber: '6.5 Creedmoor',
@@ -8463,6 +8867,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '蒂卡 T3x 超级害兽型',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Tikka',
     category: '精确射手步枪',
     caliber: '6.5 Creedmoor',
@@ -8483,6 +8889,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '蒂卡 T3x 终极精确步枪',
+    twist: '1:11"',
+    twistDir: '右旋',
     vendor: 'Tikka',
     category: '精确射手步枪',
     caliber: '.308 Win',
@@ -8503,6 +8911,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '蒂卡 T3x Ace 靶枪',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Tikka',
     category: '精确射手步枪',
     caliber: '6.5 Creedmoor',
@@ -8523,6 +8933,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '蒂卡 T3x Ace 猎用竞赛两用型',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Tikka',
     category: '步枪',
     caliber: '6.5 Creedmoor',
@@ -8783,6 +9195,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '斯太尔 SSG 69 PI',
+    twist: '1:12"',
+    twistDir: '右旋',
     vendor: 'Steyr',
     category: '狙击步枪',
     caliber: '7.62×51mm NATO / .308 Win（另有 .243 Win 等变型）',
@@ -8823,6 +9237,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '斯太尔 Scout II',
+    twist: '1:12"',
+    twistDir: '右旋',
     vendor: 'Steyr',
     category: '步枪',
     caliber: '.308 Win（另有 .223 Rem、.243 Win、6.5 Creedmoor、7mm-08 Rem）',
@@ -9023,6 +9439,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '鲁格 American 步枪（第一代标准型）',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Ruger',
     category: '步枪',
     caliber: '.30-06 Springfield（另有多口径）',
@@ -9043,6 +9461,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '鲁格 American 第二代标准型',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Ruger',
     category: '步枪',
     caliber: '6.5 Creedmoor（另有 .204 Ruger、.223 Rem、.243 Win、7mm-08、.308 Win、.450 Bushmaster 等）',
@@ -9063,6 +9483,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '鲁格 American 第二代捕食者型',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Ruger',
     category: '步枪',
     caliber: '6.5 Creedmoor（另有 .300 Win Mag、.270 Win、.350 Legend、.450 Bushmaster 等）',
@@ -9083,6 +9505,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '鲁格 American 第二代侦察型',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Ruger',
     category: '步枪',
     caliber: '.308 Win（另有 7.62×39、.350 Legend 等）',
@@ -9103,6 +9527,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '鲁格 M77 鹰眼猎人步枪',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Ruger',
     category: '步枪',
     caliber: '.308 Win（另有 .204 Ruger、.243 Win、6.5 Creedmoor、6.5 PRC、.30-06、7mm Rem Mag、.300 Win Mag 等）',
@@ -9123,6 +9549,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '鲁格 Gunsite 侦察步枪',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Ruger',
     category: '步枪',
     caliber: '.308 Win（另有 5.56 NATO、.350 Legend、.450 Bushmaster）',
@@ -9143,6 +9571,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '莫斯伯格 Patriot 步枪（合成枪托标准型）',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Mossberg',
     category: '步枪',
     caliber: '.308 Win（另有 .243 Win、.270 Win、.30-06、.300 Win Mag、6.5 Creedmoor 等）',
@@ -9163,6 +9593,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '莫斯伯格 Patriot 捕食者步枪',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Mossberg',
     category: '步枪',
     caliber: '6.5 Creedmoor（另有 .308 Win、.450 Bushmaster、.400 Legend 等）',
@@ -9183,6 +9615,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '莫斯伯格 Patriot LR 战术步枪',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Mossberg',
     category: '精确射手步枪',
     caliber: '6.5 Creedmoor（另有 .308 Win、6.5 PRC）',
@@ -9203,6 +9637,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '莫斯伯格 Patriot 卡宾枪',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Mossberg',
     category: '步枪',
     caliber: '.308 Win（另有 .22-250 Rem、6.5 Creedmoor、.450 Bushmaster、.350 Legend、6.5 PRC）',
@@ -9223,6 +9659,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '莫斯伯格 MVP 巡逻专业系列',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Mossberg',
     category: '步枪',
     caliber: '.308 Win（另有 5.56 NATO/.223 Rem、.300 AAC Blackout）',
@@ -9243,6 +9681,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '莫斯伯格 MVP 侦察步枪',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Mossberg',
     category: '步枪',
     caliber: '7.62mm NATO（.308 Win）',
@@ -9263,6 +9703,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '莫斯伯格 MVP 远程步枪',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Mossberg',
     category: '精确射手步枪',
     caliber: '6.5 Creedmoor（另有 .308 Win、.300 Win Mag 等）',
@@ -9283,6 +9725,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '莫斯伯格 MVP 轻型底盘步枪',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Mossberg',
     category: '精确射手步枪',
     caliber: '.308 Win（另有 5.56 NATO）',
@@ -9303,6 +9747,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '莫斯伯格 MVP 捕食者步枪',
+    twist: '1:9"',
+    twistDir: '右旋',
     vendor: 'Mossberg',
     category: '步枪',
     caliber: '5.56 NATO/.223 Rem（另有 .308 Win、.224 Valkyrie 等）',
@@ -9323,6 +9769,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '莫斯伯格 4x4 步枪',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Mossberg',
     category: '步枪',
     caliber: '.308 Win（另有 .243 Win、.270 Win、.22-250 Rem、.300 Win Mag 等）',
@@ -9343,6 +9791,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '亨利经典杠杆 .22',
+    twist: '1:16"',
+    twistDir: '右旋',
     vendor: 'Henry',
     category: '步枪',
     caliber: '.22 S/L/LR',
@@ -9363,6 +9813,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '亨利金童',
+    twist: '1:16"',
+    twistDir: '右旋',
     vendor: 'Henry',
     category: '步枪',
     caliber: '.22 S/L/LR（主打；另有 .22 WMR、.17 HMR 版）',
@@ -9383,6 +9835,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '亨利大男孩 .357',
+    twist: '1:16"',
+    twistDir: '右旋',
     vendor: 'Henry',
     category: '步枪',
     caliber: '.357 Magnum / .38 Special',
@@ -9403,6 +9857,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '亨利长程者 .308',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Henry',
     category: '步枪',
     caliber: '.308 Win / 7.62×51 NATO',
@@ -9423,6 +9879,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '亨利单发 .308',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Henry',
     category: '步枪',
     caliber: '.308 Win / 7.62×51 NATO',
@@ -9463,6 +9921,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '亨利美国生存 AR-7',
+    twist: '1:16"',
+    twistDir: '右旋',
     vendor: 'Henry',
     category: '步枪',
     caliber: '.22 LR',
@@ -9483,6 +9943,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'CZ 600 美式 .308',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'CZ',
     category: '步枪',
     caliber: '.308 Win（主打；另有 .223、.243、6.5 CM、.30-06、.300 WM 等）',
@@ -9503,6 +9965,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'CZ 600 阿尔法 .308',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'CZ',
     category: '步枪',
     caliber: '.308 Win（主打）',
@@ -9523,6 +9987,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'CZ 600 豪华 .308',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'CZ',
     category: '步枪',
     caliber: '.308 Win（主打；另有 .30-06、.300 WM 等）',
@@ -9563,6 +10029,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'CZ 600 射程 .308',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'CZ',
     category: '精确射手步枪',
     caliber: '.308 Win（主打；另有 6mm Creedmoor）',
@@ -9583,6 +10051,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'CZ 600 MDT 灰 .308',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'CZ',
     category: '精确射手步枪',
     caliber: '.308 Win',
@@ -9603,6 +10073,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'CZ 457 美式 .22',
+    twist: '1:16"',
+    twistDir: '右旋',
     vendor: 'CZ',
     category: '步枪',
     caliber: '.22 LR',
@@ -9628,6 +10100,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'CZ 457 害兽 .22',
+    twist: '1:16"',
+    twistDir: '右旋',
     vendor: 'CZ',
     category: '步枪',
     caliber: '.22 LR（主打；另有 .17 HMR、.22 WMR）',
@@ -9653,6 +10127,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'CZ 527 美式 .223',
+    twist: '1:9"',
+    twistDir: '右旋',
     vendor: 'CZ',
     category: '步枪',
     caliber: '.223 Rem',
@@ -9673,6 +10149,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '贝内利 Lupo BE.S.T. .308',
+    twist: '1:11"',
+    twistDir: '右旋',
     vendor: 'Benelli',
     category: '步枪',
     caliber: '.308 Win（主打；另有 .30-06、.300 WM 等）',
@@ -9693,6 +10171,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '贝内利 Lupo HPR 6.5',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Benelli',
     category: '精确射手步枪',
     caliber: '6.5 Creedmoor（主打；另有 .308、.300 WM、.300 PRC、.338 Lapua 等）',
@@ -9713,6 +10193,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '贝内利 Lupo 阿尔法 .308',
+    twist: '1:11"',
+    twistDir: '右旋',
     vendor: 'Benelli',
     category: '步枪',
     caliber: '.308 Win',
@@ -9753,6 +10235,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '柯尔特 M5 卡宾枪',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Colt',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -9773,6 +10257,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '柯尔特 CR6940 单体卡宾枪',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Colt',
     category: '步枪',
     caliber: '5.56 NATO / .223 Rem',
@@ -9833,6 +10319,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'SIG 516（初代）',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '步枪',
     caliber: '5.56×45mm NATO（另有 7.62×39mm 款）',
@@ -9853,6 +10341,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'SIG 716 G2 精确射手型',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '精确射手步枪',
     caliber: '.308 Winchester（7.62×51mm NATO）',
@@ -9873,6 +10363,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'SIG 716 巡逻型（初代）',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '步枪',
     caliber: '7.62×51mm NATO',
@@ -9893,6 +10385,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'SIG 556xi',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '步枪',
     caliber: '5.56×45mm / 7.62×39mm / .300 Blackout（多口径平台）',
@@ -9918,6 +10412,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'SIG SG 552 突击队型',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '步枪',
     caliber: '5.56×45mm NATO（瑞士 GP90）',
@@ -9938,6 +10434,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'SIG SG 550 狙击型',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '狙击步枪',
     caliber: '5.56×45mm NATO',
@@ -9958,6 +10456,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'SIG Cross 竞赛精确型',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '狙击步枪',
     caliber: '6.5 Creedmoor',
@@ -9978,6 +10478,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'SIG M400 精英型',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '步枪',
     caliber: '5.56 NATO / .223 Remington',
@@ -9998,6 +10500,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'SIG M400 SDI X 系列',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'SIG Sauer',
     category: '步枪',
     caliber: '5.56mm NATO',
@@ -10018,6 +10522,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'HK416',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Heckler & Koch',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -10038,6 +10544,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'HK MR556A4',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Heckler & Koch',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -10058,6 +10566,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'HK G36',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Heckler & Koch',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -10078,6 +10588,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'HK G36K',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Heckler & Koch',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -10098,6 +10610,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'HK SL8',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Heckler & Koch',
     category: '步枪',
     caliber: '5.56×45mm NATO / .223 Remington',
@@ -10178,6 +10692,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'HK G3A3',
+    twist: '1:12"',
+    twistDir: '右旋',
     vendor: 'Heckler & Koch',
     category: '步枪',
     caliber: '7.62×51mm NATO',
@@ -10198,6 +10714,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'HK33A2',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Heckler & Koch',
     category: '步枪',
     caliber: '5.56×45mm NATO / .223 Remington',
@@ -10218,6 +10736,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'HK433',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Heckler & Koch',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -10238,6 +10758,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'HK437',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Heckler & Koch',
     category: '步枪',
     caliber: '.300 Blackout（7.62×35mm）',
@@ -10278,6 +10800,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'FN SCAR 20S',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'FN Herstal',
     category: '精确射手步枪',
     caliber: '7.62×51mm NATO（另有 6.5 Creedmoor 款）',
@@ -10298,6 +10822,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'FN SCAR-SC',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'FN Herstal',
     category: '步枪',
     caliber: '5.56×45mm NATO（另有 .300 Blackout 款）',
@@ -10318,6 +10844,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'FN 15 巡逻卡宾型',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'FN Herstal',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -10338,6 +10866,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'FN 15 DMR3',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'FN Herstal',
     category: '精确射手步枪',
     caliber: '5.56×45mm NATO',
@@ -10358,6 +10888,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'FN F2000',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'FN Herstal',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -10378,6 +10910,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'FN SPR A5M',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'FN Herstal',
     category: '狙击步枪',
     caliber: '.308 Winchester（7.62×51mm）',
@@ -10627,6 +11161,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'IWI 锡安 15（标准型）',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'IWI',
     category: '步枪',
     caliber: '5.56 NATO',
@@ -10647,6 +11183,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'IWI 锡安 15 SPR',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'IWI',
     category: '精确射手步枪',
     caliber: '5.56 NATO',
@@ -10667,6 +11205,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'DDM4 V1 型',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Daniel Defense',
     category: '步枪',
     caliber: '5.56mm NATO',
@@ -10687,6 +11227,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'DDM4 V9 型',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Daniel Defense',
     category: '步枪',
     caliber: '5.56mm NATO',
@@ -10707,6 +11249,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'DDM4 V7 Pro 型',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Daniel Defense',
     category: '步枪',
     caliber: '5.56mm NATO',
@@ -10727,6 +11271,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'M4A1 型（RIS II）',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Daniel Defense',
     category: '步枪',
     caliber: '5.56mm NATO',
@@ -10747,6 +11293,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'M4A1 RIII 型',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Daniel Defense',
     category: '步枪',
     caliber: '5.56mm NATO',
@@ -10807,6 +11355,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'SPRIII 型',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Daniel Defense',
     category: '精确射手步枪',
     caliber: '5.56mm NATO',
@@ -10867,6 +11417,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'DDM4 ISR 型',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Daniel Defense',
     category: '步枪',
     caliber: '.300 AAC Blackout',
@@ -10907,6 +11459,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'M468 型',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Barrett',
     category: '步枪',
     caliber: '6.8mm SPC（6.8×43mm）',
@@ -11530,6 +12084,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '春田 M1903',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Springfield Armory',
     category: '步枪',
     caliber: '.30-06 Springfield',
@@ -11550,6 +12106,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '春田 M1903A3',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Springfield Armory',
     category: '步枪',
     caliber: '.30-06 Springfield',
@@ -11570,6 +12128,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: '春田 M1903A4 狙击型',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Springfield Armory',
     category: '狙击步枪',
     caliber: '.30-06 Springfield',
@@ -11972,6 +12532,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'LWRC IC DI 型',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'LWRC',
     category: '步枪',
     caliber: '5.56mm NATO',
@@ -11992,6 +12554,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'LWRC IC-A5 型',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'LWRC',
     category: '步枪',
     caliber: '5.56mm NATO',
@@ -12012,6 +12576,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'LWRC IC-SPR 型',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'LWRC',
     category: '精确射手步枪',
     caliber: '5.56mm NATO',
@@ -12172,6 +12738,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'Stag-15 M4 型',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Stag Arms',
     category: '步枪',
     caliber: '5.56mm NATO',
@@ -12192,6 +12760,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'Stag-15 战术型',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Stag Arms',
     category: '步枪',
     caliber: '5.56mm NATO',
@@ -12212,6 +12782,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'Stag-15 SPR 型',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Stag Arms',
     category: '精确射手步枪',
     caliber: '5.56mm NATO',
@@ -12232,6 +12804,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'Stag-15 3-Gun 型',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Stag Arms',
     category: '步枪',
     caliber: '5.56mm NATO',
@@ -12252,6 +12826,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'Stag-15 Varminter 型',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Stag Arms',
     category: '步枪',
     caliber: '5.56mm NATO / .223 Wylde',
@@ -12292,6 +12868,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'Stag-15 Retro 型',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Stag Arms',
     category: '步枪',
     caliber: '5.56mm NATO',
@@ -12312,6 +12890,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'Stag-15 SPCTRM 型',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Stag Arms',
     category: '步枪',
     caliber: '5.56mm NATO',
@@ -12332,6 +12912,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'Stag-10 战术型',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Stag Arms',
     category: '步枪',
     caliber: '7.62×51mm NATO / .308 Winchester',
@@ -12352,6 +12934,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'Stag-10 Pursuit 型',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Stag Arms',
     category: '步枪',
     caliber: '6.5 Creedmoor / .308 Winchester',
@@ -12372,6 +12956,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'Stag-10 Marksman 型',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Stag Arms',
     category: '精确射手步枪',
     caliber: '6.5 Creedmoor / .308 Winchester',
@@ -12392,6 +12978,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'Stag Pursuit 栓动型',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Stag Arms',
     category: '狙击步枪',
     caliber: '6.5 Creedmoor / .308 Winchester',
@@ -12412,6 +13000,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'Aero M4E1 整枪',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Aero Precision',
     category: '步枪',
     caliber: '5.56mm NATO',
@@ -12432,6 +13022,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'Aero M5E1 整枪',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Aero Precision',
     category: '步枪',
     caliber: '7.62×51mm NATO / .308 Winchester',
@@ -12452,6 +13044,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'Aero SOLUS 猎手型',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Aero Precision',
     category: '狙击步枪',
     caliber: '6.5 Creedmoor / .308 Winchester',
@@ -12472,6 +13066,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'Aero SOLUS 竞赛型',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Aero Precision',
     category: '狙击步枪',
     caliber: '6.5 Creedmoor / 6mm Creedmoor',
@@ -12492,6 +13088,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'M&P15 基础型',
+    twist: '1:9"',
+    twistDir: '右旋',
     vendor: 'Smith & Wesson',
     category: '步枪',
     caliber: '5.56mm NATO',
@@ -12512,6 +13110,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'M&P15 Sport III 型',
+    twist: '1:9"',
+    twistDir: '右旋',
     vendor: 'Smith & Wesson',
     category: '步枪',
     caliber: '5.56mm NATO',
@@ -12532,6 +13132,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'M&P15-22 Sport 型',
+    twist: '1:15"',
+    twistDir: '右旋',
     vendor: 'Smith & Wesson',
     category: '步枪',
     caliber: '.22 LR',
@@ -12572,6 +13174,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'M&P10 型',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Smith & Wesson',
     category: '步枪',
     caliber: '7.62×51mm NATO / .308 Winchester',
@@ -12592,6 +13196,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'M&P10 Sport 型',
+    twist: '1:10"',
+    twistDir: '右旋',
     vendor: 'Smith & Wesson',
     category: '步枪',
     caliber: '7.62×51mm NATO / .308 Winchester',
@@ -12612,6 +13218,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'M&P10 性能中心 6.5 Creedmoor 型',
+    twist: '1:8"',
+    twistDir: '右旋',
     vendor: 'Smith & Wesson',
     category: '精确射手步枪',
     caliber: '6.5 Creedmoor',
@@ -12652,6 +13260,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'AKM',
+    twist: '1:9.45"',
+    twistDir: '右旋',
     vendor: '伊热夫斯克',
     category: '步枪',
     caliber: '7.62×39mm',
@@ -13309,6 +13919,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'HK416A5',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Heckler & Koch',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -13329,6 +13941,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'HK416A7',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Heckler & Koch',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -13349,6 +13963,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'HK416F',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Heckler & Koch',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -13369,6 +13985,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'G36C',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Heckler & Koch',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -13693,6 +14311,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'AUG A3',
+    twist: '1:9"',
+    twistDir: '右旋',
     vendor: 'Steyr',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -13713,6 +14333,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'M16A4',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Colt',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -13733,6 +14355,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'M4A1',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'Colt',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -13933,6 +14557,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'FNC',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'FN Herstal',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -13953,6 +14579,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'FNC Para',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'FN Herstal',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -14033,6 +14661,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'CZ 805 A1',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'CZ',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -14053,6 +14683,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'CZ 805 A2',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'CZ',
     category: '步枪',
     caliber: '5.56×45mm NATO',
@@ -14193,6 +14825,8 @@ const List<Gun> guns = [
   ),
   Gun(
     name: 'Bren 2 Ms 卡宾型',
+    twist: '1:7"',
+    twistDir: '右旋',
     vendor: 'CZ',
     category: '步枪',
     caliber: '5.56×45mm NATO',

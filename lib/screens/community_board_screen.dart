@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import '../widgets/app_toast.dart';
 import '../community_store.dart';
 import '../i18n.dart';
 import '../widgets/app_top_bar.dart';
 import '../widgets/community_theme.dart';
 import '../widgets/level_badge.dart';
 import 'community_account_dialogs.dart';
-import 'community_compose_screen.dart';
 import 'community_post_detail_screen.dart';
 import 'community_profile_screen.dart';
 
@@ -73,17 +71,6 @@ class _CommunityBoardScreenState extends State<CommunityBoardScreen> {
     return [...pinned, ...rest];
   }
 
-  void _openComposer() {
-    if (communityStore.current == null) {
-      showAppToast(context, tr('login_required_body'));
-      return;
-    }
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const CommunityComposeScreen()),
-    );
-  }
-
   Widget _threadRow(CommunityPost p, Color grey) {
     return _ThreadRow(
       post: p,
@@ -126,6 +113,7 @@ class _CommunityBoardScreenState extends State<CommunityBoardScreen> {
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              // 发布入口已移到第 11 项的底部导航中间＋号，板块页不再放发布按钮。
               Row(
                 children: [
                   const Spacer(),
@@ -133,11 +121,6 @@ class _CommunityBoardScreenState extends State<CommunityBoardScreen> {
                     onPressed: () =>
                         setState(() => _showSearch = !_showSearch),
                     icon: const Icon(Icons.search),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: _openComposer,
-                    icon: const Icon(Icons.edit_outlined, size: 18),
-                    label: Text(tr('post_new')),
                   ),
                 ],
               ),
@@ -342,15 +325,7 @@ class _CommunityBoardScreenState extends State<CommunityBoardScreen> {
                                 ? tr('board_empty_show')
                                 : tr('no_posts_sub'),
                             style: TextStyle(color: grey, fontSize: 12)),
-                        if (boardPosts.isEmpty &&
-                            _query.isEmpty &&
-                            _tag == null) ...[
-                          const SizedBox(height: 12),
-                          OutlinedButton(
-                            onPressed: _openComposer,
-                            child: Text(tr('board_post_first')),
-                          ),
-                        ],
+                        // 空板块不再放“发第一条”按钮，发布走底部导航＋号。
                       ],
                     ),
                   ),

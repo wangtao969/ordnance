@@ -1,4 +1,5 @@
 import 'data.dart';
+import 'i18n.dart';
 import 'models.dart';
 
 /// 品牌与专业术语的英文显示映射（显示层专用，绝不动 data.dart 的值）。
@@ -28,7 +29,23 @@ const Map<String, String> _categories = {
   '冲锋枪': 'Submachine Gun',
 };
 
-String categoryDisplay(String c) => _categories[c] ?? c;
+/// 品类显示跟随语言（第 10 项修复）：英文模式用本表的英文术语
+/// （保持现有英文显示不变，如 Pistol 而非 Handgun）；繁体走
+/// trCategory；简体返回中文原名。旧版无条件返回英文，导致
+/// 中文模式下品类也显示英文。
+String categoryDisplay(String c) {
+  if (localeNotifier.value == localeEn) return _categories[c] ?? c;
+  return trCategory(c);
+}
+
+/// 品类搜索匹配（第 10 项）：中英文品类名都要命中，与显示语言无关。
+bool categoryMatches(String category, String query) {
+  final q = query.toLowerCase();
+  if (category.toLowerCase().contains(q)) return true;
+  final en = _categories[category];
+  if (en != null && en.toLowerCase().contains(q)) return true;
+  return false;
+}
 
 /// 枪机原理：按中文全角逗号切段、每段查表、再用英文逗号拼回。
 /// 142 个切段全量覆盖（脚本枚举自 738 支的 147 个不同 action 串）。

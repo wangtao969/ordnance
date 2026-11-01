@@ -9,9 +9,10 @@ import '../widgets/liquid_glass_nav.dart';
 
 /// 发帖器（Threads 风格排版）：顶部左边取消、右边液态玻璃发布按钮；
 /// 下方头像 + 用户名一行，配大面积无边框纯文本输入框；附件行：
-/// 图片（已有链路）/ 定位（GPS）/ 天气快照（复用天气系统）/ 视频
-/// （系统选视频，存沙盒路径）；附件不进草稿，只活在本次编辑器里；
-/// 不加回复权限选择器（原先就没有）。
+/// 图片（已有链路）/ 拍照（相机实时拍摄）/ 定位（GPS）/ 天气快照
+/// （复用天气系统）/ 视频（系统选视频，存沙盒路径）；另有话题插入、
+/// 常用表情快捷插入与投票（2–4 选项）；附件与投票不进草稿，只活在
+/// 本次编辑器里；不加回复权限选择器（原先就没有）。
 /// 标题（可选）、板块选择、自动草稿与清除草稿等已有能力全部保留。
 /// 每敲一个字都更新草稿：写一半切后台再回来，内容还在；
 /// 发布成功自动清草稿；草稿保存在本机。
@@ -32,6 +33,25 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
   String _location = '';
   String _weather = '';
   String _videoPath = '';
+  // 投票（第 11 项，不进草稿）：开关 + 2–4 个选项框。
+  bool _pollEnabled = false;
+  final _pollCtrls = <TextEditingController>[
+    TextEditingController(),
+    TextEditingController(),
+  ];
+  // 常用表情快捷插入（输入法表情本身一直可用，这里只给一行快捷键）。
+  static const _quickEmojis = [
+    '😀',
+    '😂',
+    '👍',
+    '🔥',
+    '🎯',
+    '💥',
+    '👏',
+    '😮',
+    '🤔',
+    '🙏',
+  ];
 
   @override
   void initState() {
@@ -48,7 +68,55 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
     communityStore.persist();
     _titleCtrl.dispose();
     _contentCtrl.dispose();
+    for (final c in _pollCtrls) {
+      c.dispose();
+    }
     super.dispose();
+  }
+
+  /// 在正文光标处插入文本（话题、表情共用；无光标时追加到末尾）。
+  void _insertAtCursor(String text) {
+    final sel = _contentCtrl.selection;
+    final old = _contentCtrl.text;
+    final start = sel.isValid ? sel.start : old.length;
+    final end = sel.isValid ? sel.end : old.length;
+    final next = old.replaceRange(start, end, text);
+    _contentCtrl.value = TextEditingValue(
+      text: next,
+      selection: TextSelection.collapsed(offset: start + text.length),
+    );
+    _saveDraft();
+  }
+
+  /// 自定义话题：输入名（不用加 # 号），确认后以 #名# 形式插入正文。
+  Future<void> _customTopic() async {
+    final ctrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('compose_topic_custom')),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: InputDecoration(hintText: tr('compose_topic_hint')),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(tr('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(tr('confirm')),
+          ),
+        ],
+      ),
+    );
+    final name = ctrl.text.trim();
+    ctrl.dispose();
+    if (ok == true && name.isNotEmpty) {
+      _insertAtCursor('#$name# ');
+    }
   }
 
   void _saveDraft() {
@@ -117,6 +185,21 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
     }
   }
 
+  /// 相机实时拍摄（第 11 项）：原生 capturePhoto 走 ACTION_IMAGE_CAPTURE，
+  /// 拍完直接作为配图带入发布；用户取消不提示，异常才提示。
+  Future<void> _capturePhoto() async {
+    try {
+      final bytes =
+          await _pickImageChannel.invokeMethod<Uint8List>('capturePhoto');
+      if (bytes == null || bytes.isEmpty) return;
+      if (mounted) setState(() => _images.add(bytes));
+    } catch (_) {
+      if (mounted) {
+        showAppToast(context, tr('compose_camera_failed'));
+      }
+    }
+  }
+
   /// 视频附件：系统选视频（ACTION_GET_CONTENT video/*），原生侧拷到
   /// cacheDir/videos 后返回沙盒路径，存 post.videoPath；用户取消不提示。
   Future<void> _addVideo() async {
@@ -174,6 +257,14 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
       showAppToast(context, tr('compose_body_empty'));
       return;
     }
+    // 投票校验（第 11 项）：开启时至少两个非空选项，否则不发布。
+    final pollOptions = _pollEnabled
+        ? _pollCtrls.map((c) => c.text.trim()).where((t) => t.isNotEmpty).toList()
+        : <String>[];
+    if (_pollEnabled && pollOptions.length < 2) {
+      showAppToast(context, tr('compose_poll_need_two'));
+      return;
+    }
     final err = communityStore.createPost(
       title: _titleCtrl.text,
       content: content,
@@ -182,6 +273,7 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
       location: _location,
       weather: _weather,
       videoPath: _videoPath,
+      pollOptions: pollOptions,
     );
     if (err != null) {
       if (err == tr('store_err_not_logged')) {
@@ -324,8 +416,81 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
             const SizedBox(height: 8),
             Text(tr('compose_tag_note'),
                 style: TextStyle(color: grey, fontSize: 12)),
+            const SizedBox(height: 12),
+            // 常用表情快捷插入（第 11 项）：点一下插到正文光标处。
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _quickEmojis
+                    .map((e) => GestureDetector(
+                          onTap: () => _insertAtCursor(e),
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: Text(e,
+                                style: const TextStyle(fontSize: 22)),
+                          ),
+                        ))
+                    .toList(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // 话题插入（第 11 项）：高频话题点一下插 #话题#，另可自定义。
+            Builder(
+              builder: (_) {
+                final counts = <String, int>{};
+                for (final p in communityStore.posts) {
+                  for (final t in p.tags) {
+                    counts[t] = (counts[t] ?? 0) + 1;
+                  }
+                }
+                final topTags = (counts.entries.toList()
+                      ..sort((a, b) => b.value.compareTo(a.value)))
+                    .take(8)
+                    .map((e) => e.key)
+                    .toList();
+                return Row(
+                  children: [
+                    Text('${tr('compose_topic')}：',
+                        style: TextStyle(color: grey, fontSize: 13)),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: topTags
+                              .map((t) => GestureDetector(
+                                    onTap: () =>
+                                        _insertAtCursor('#$t# '),
+                                    child: Container(
+                                      margin: const EdgeInsets.only(right: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        borderRadius:
+                                            BorderRadius.circular(14),
+                                        border: Border.all(
+                                            color: grey.withValues(
+                                                alpha: 0.4)),
+                                      ),
+                                      child: Text('#$t#',
+                                          style: TextStyle(
+                                              color: grey, fontSize: 13)),
+                                    ),
+                                  ))
+                              .toList(),
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: _customTopic,
+                      child: Text('+ ${tr('compose_topic_custom')}',
+                          style: TextStyle(color: grey, fontSize: 13)),
+                    ),
+                  ],
+                );
+              },
+            ),
             const SizedBox(height: 16),
-            // 附件行：图片 / 定位 / 天气快照 / 视频。
+            // 附件行：图片 / 拍照 / 定位 / 天气快照 / 视频。
             Wrap(
               spacing: 20,
               runSpacing: 12,
@@ -338,6 +503,11 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
                           '${_images.length}' +
                           tr('compose_add_image_suffix'),
                   _addImage,
+                ),
+                _attachButton(
+                  Icons.camera_alt_outlined,
+                  tr('compose_camera'),
+                  _capturePhoto,
                 ),
                 _attachButton(
                   Icons.location_on_outlined,
@@ -415,6 +585,58 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
                 }).toList(),
               ),
             ],
+            const SizedBox(height: 16),
+            // 投票（第 11 项）：开关 + 2–4 个选项框，不进草稿。
+            Row(
+              children: [
+                Checkbox(
+                  value: _pollEnabled,
+                  onChanged: (v) =>
+                      setState(() => _pollEnabled = v ?? false),
+                ),
+                GestureDetector(
+                  onTap: () =>
+                      setState(() => _pollEnabled = !_pollEnabled),
+                  child: Text(tr('compose_poll'),
+                      style: TextStyle(color: fg, fontSize: 15)),
+                ),
+              ],
+            ),
+            if (_pollEnabled) ...[
+              for (var i = 0; i < _pollCtrls.length; i++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _pollCtrls[i],
+                          style: TextStyle(color: fg, fontSize: 15),
+                          decoration: InputDecoration(
+                            hintText:
+                                '${tr('compose_poll_option')} ${i + 1}',
+                            border: const OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                      if (_pollCtrls.length > 2)
+                        IconButton(
+                          icon: const Icon(Icons.remove_circle_outline),
+                          onPressed: () => setState(
+                              () => _pollCtrls.removeAt(i).dispose()),
+                        ),
+                    ],
+                  ),
+                ),
+              if (_pollCtrls.length < 4)
+                TextButton.icon(
+                  onPressed: () => setState(
+                      () => _pollCtrls.add(TextEditingController())),
+                  icon: const Icon(Icons.add),
+                  label: Text(tr('compose_poll_add')),
+                ),
+            ],
             const SizedBox(height: 24),
             // 底部：草稿说明 + 清除草稿（仅有草稿时出现）。
             Row(
@@ -435,6 +657,13 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
                         _location = '';
                         _weather = '';
                         _videoPath = '';
+                        _pollEnabled = false;
+                        for (final c in _pollCtrls) {
+                          c.clear();
+                        }
+                        while (_pollCtrls.length > 2) {
+                          _pollCtrls.removeLast().dispose();
+                        }
                       });
                     },
                     child: Text(tr('compose_clear_draft'),

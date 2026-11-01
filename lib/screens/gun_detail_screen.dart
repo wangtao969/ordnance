@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../ballistic_store.dart';
+import '../gun_setup_data.dart';
 import '../data.dart';
 import '../english_terms.dart';
 import '../haptics.dart';
 import '../i18n.dart';
 import '../models.dart';
+import '../widgets/app_toast.dart';
 import '../widgets/parametric_silhouette.dart';
 import '../widgets/family_diagram.dart';
 import '../widgets/app_top_bar.dart';
@@ -22,11 +24,74 @@ class GunDetailScreen extends StatefulWidget {
 class _GunDetailScreenState extends State<GunDetailScreen> {
   final Set<String> _assembled = {};
   late final Future<List<BallisticProfile>> _profilesFuture;
+  Future<Map<String, GunSetup>> _setupFuture = loadGunSetups();
 
   @override
   void initState() {
     super.initState();
     _profilesFuture = loadBallisticProfiles();
+  }
+
+  /// 编辑个人配置：四项全是用户自填，空=未填；保存后只写 gun_setup_v1。
+  Future<void> _editSetup() async {
+    final setups = await loadGunSetups();
+    final cur = setups[widget.gun.name] ?? GunSetup();
+    final vCtrl = TextEditingController(text: cur.velocity);
+    final zCtrl = TextEditingController(text: cur.zeroDistance);
+    final sCtrl = TextEditingController(text: cur.sightHeight);
+    final sgCtrl = TextEditingController(text: cur.sg);
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dctx) => AlertDialog(
+        title: Text(tr('gun_data_edit')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: vCtrl,
+              decoration: InputDecoration(labelText: tr('gun_data_velocity')),
+            ),
+            TextField(
+              controller: zCtrl,
+              decoration: InputDecoration(labelText: tr('gun_data_zero')),
+            ),
+            TextField(
+              controller: sCtrl,
+              decoration: InputDecoration(labelText: tr('gun_data_sight')),
+            ),
+            TextField(
+              controller: sgCtrl,
+              decoration: InputDecoration(labelText: tr('gun_data_sg')),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dctx).pop(false),
+            child: Text(tr('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dctx).pop(true),
+            child: Text(tr('save')),
+          ),
+        ],
+      ),
+    );
+    if (saved == true && mounted) {
+      setups[widget.gun.name] = GunSetup(
+        velocity: vCtrl.text.trim(),
+        zeroDistance: zCtrl.text.trim(),
+        sightHeight: sCtrl.text.trim(),
+        sg: sgCtrl.text.trim(),
+      );
+      await saveGunSetups(setups);
+      setState(() => _setupFuture = Future.value(setups));
+      showAppToast(context, tr('gun_data_saved'));
+    }
+    vCtrl.dispose();
+    zCtrl.dispose();
+    sCtrl.dispose();
+    sgCtrl.dispose();
   }
 
   static List<(String, String, double, double)> _hotspots() => [
@@ -210,6 +275,37 @@ class _GunDetailScreenState extends State<GunDetailScreen> {
                   ),
               ],
             ),
+          const SizedBox(height: 12),
+          Text(tr('gun_data_title'),
+              style: const TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          _spec(tr('gun_data_twist'),
+              gun.twist.isEmpty ? tr('gun_data_not_listed') : gun.twist),
+          _spec(tr('gun_data_twist_dir'),
+              gun.twistDir.isEmpty ? tr('gun_data_not_listed') : gun.twistDir),
+          FutureBuilder<Map<String, GunSetup>>(
+            future: _setupFuture,
+            builder: (_, snap) {
+              final setup = snap.data?[gun.name] ?? GunSetup();
+              String show(String v) =>
+                  v.isEmpty ? tr('gun_data_empty') : v;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _spec(tr('gun_data_velocity'), show(setup.velocity)),
+                  _spec(tr('gun_data_zero'), show(setup.zeroDistance)),
+                  _spec(tr('gun_data_sight'), show(setup.sightHeight)),
+                  _spec(tr('gun_data_sg'), show(setup.sg)),
+                  const SizedBox(height: 4),
+                  OutlinedButton(
+                    onPressed: _editSetup,
+                    child: Text(tr('gun_data_edit')),
+                  ),
+                ],
+              );
+            },
+          ),
           FutureBuilder<List<BallisticProfile>>(
             future: _profilesFuture,
             builder: (_, snap) {

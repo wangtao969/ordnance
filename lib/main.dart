@@ -7,9 +7,11 @@ import 'community_store.dart';
 import 'haptics.dart';
 import 'i18n.dart';
 import 'screens/catalog_screen.dart';
+import 'screens/community_compose_screen.dart';
 import 'screens/community_screen.dart';
 import 'screens/my_screen.dart';
 import 'screens/tools_screen.dart';
+import 'widgets/app_toast.dart';
 import 'widgets/liquid_glass_nav.dart';
 import 'widgets/page_transitions.dart';
 
@@ -170,6 +172,19 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _index = 0;
 
+  /// 中间＋号发布（第 11 项）：未登录先提示登录，否则进发布页。
+  void _openComposer() {
+    if (communityStore.current == null) {
+      showAppToast(context, tr('login_required_body'));
+      return;
+    }
+    tapHaptic();
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CommunityComposeScreen()),
+    );
+  }
+
   static const _tabs = [
     (Icons.grid_view_rounded, Icons.grid_view_rounded, 'tab_catalog'),
     (Icons.forum_outlined, Icons.forum_rounded, 'tab_community'),
@@ -228,15 +243,51 @@ class _HomePageState extends State<HomePage> {
               bottom: 0,
               child: SafeArea(
                 top: false,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 18),
-                  child: _FloatingNavBar(
-                    index: _index,
-                    onTap: (i) {
-                      tapHaptic();
-                      setState(() => _index = i);
-                    },
-                  ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 18),
+                      child: _FloatingNavBar(
+                        index: _index,
+                        onTap: (i) {
+                          tapHaptic();
+                          setState(() => _index = i);
+                        },
+                      ),
+                    ),
+                    // 中间＋号发布按钮（第 11 项）：56px 圆形，圆心落在药丸
+                    // 顶边上（底部偏移 18 + 68 − 28 = 58）；不放在药丸的
+                    // ClipRRect 内部，以免凸起部分被裁掉。
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 58,
+                      child: Center(
+                        child: GestureDetector(
+                          onTap: _openComposer,
+                          child: Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE86A1C),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color:
+                                      Colors.black.withValues(alpha: 0.25),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(Icons.add,
+                                color: Colors.white, size: 30),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -301,15 +352,23 @@ class _FloatingNavBar extends StatelessWidget {
                       ),
                     ],
                   ),
+                  // 5 槽（第 11 项）：图鉴 / 社区 / 中间 56px 空位（＋号按钮
+                  // 盖在上面）/ 工具 / 我的；槽位与页下标的映射：0、1、3、4。
                   child: Row(
                     children: [
-                      for (var i = 0; i < _HomePageState._tabs.length; i++)
-                        Expanded(child: _NavItem(
-                          icon: _HomePageState._tabs[i].$1,
-                          activeIcon: _HomePageState._tabs[i].$2,
-                          selected: index == i,
-                          onTap: () => onTap(i),
-                        )),
+                      for (var slot = 0; slot < 5; slot++)
+                        if (slot == 2)
+                          const SizedBox(width: 56)
+                        else
+                          Expanded(child: _NavItem(
+                            icon: _HomePageState
+                                ._tabs[slot < 2 ? slot : slot - 1].$1,
+                            activeIcon: _HomePageState
+                                ._tabs[slot < 2 ? slot : slot - 1].$2,
+                            selected: index == (slot < 2 ? slot : slot - 1),
+                            onTap: () =>
+                                onTap(slot < 2 ? slot : slot - 1),
+                          )),
                     ],
                   ),
                 ),

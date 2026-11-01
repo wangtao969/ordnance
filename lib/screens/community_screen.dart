@@ -377,6 +377,22 @@ class _CommunityScreenState extends State<CommunityScreen> {
                             style: metaStyle),
                       ],
                     ),
+                    // 投票帖标记（第 11 项）：点卡片进详情投票。
+                    if (p.pollOptions.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.poll_outlined,
+                              size: 13, color: grey),
+                          const SizedBox(width: 4),
+                          Text(
+                              tr('poll_votes_prefix') +
+                                  '${p.pollVoters.length}' +
+                                  tr('poll_votes_suffix'),
+                              style: metaStyle),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
