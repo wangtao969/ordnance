@@ -243,51 +243,16 @@ class _HomePageState extends State<HomePage> {
               bottom: 0,
               child: SafeArea(
                 top: false,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 18),
-                      child: _FloatingNavBar(
-                        index: _index,
-                        onTap: (i) {
-                          tapHaptic();
-                          setState(() => _index = i);
-                        },
-                      ),
-                    ),
-                    // 中间＋号发布按钮（第 11 项）：56px 圆形，圆心落在药丸
-                    // 顶边上（底部偏移 18 + 68 − 28 = 58）；不放在药丸的
-                    // ClipRRect 内部，以免凸起部分被裁掉。
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 58,
-                      child: Center(
-                        child: GestureDetector(
-                          onTap: _openComposer,
-                          child: Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE86A1C),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color:
-                                      Colors.black.withValues(alpha: 0.25),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(Icons.add,
-                                color: Colors.white, size: 30),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 18),
+                  child: _FloatingNavBar(
+                    index: _index,
+                    onTap: (i) {
+                      tapHaptic();
+                      setState(() => _index = i);
+                    },
+                    onCompose: _openComposer,
+                  ),
                 ),
               ),
             ),
@@ -304,7 +269,9 @@ class _HomePageState extends State<HomePage> {
 class _FloatingNavBar extends StatelessWidget {
   final int index;
   final ValueChanged<int> onTap;
-  const _FloatingNavBar({required this.index, required this.onTap});
+  final VoidCallback onCompose;
+  const _FloatingNavBar(
+      {required this.index, required this.onTap, required this.onCompose});
 
   @override
   Widget build(BuildContext context) {
@@ -352,13 +319,40 @@ class _FloatingNavBar extends StatelessWidget {
                       ),
                     ],
                   ),
-                  // 5 槽（第 11 项）：图鉴 / 社区 / 中间 56px 空位（＋号按钮
-                  // 盖在上面）/ 工具 / 我的；槽位与页下标的映射：0、1、3、4。
+                  // 5 槽：图鉴 / 社区 / 中间＋号（栏内居中方形按钮，
+                  // 方形底 + 十字，不用圆形）/ 工具 / 我的；槽位与页下标
+                  // 的映射：0、1、3、4。
                   child: Row(
                     children: [
                       for (var slot = 0; slot < 5; slot++)
                         if (slot == 2)
-                          const SizedBox(width: 56)
+                          SizedBox(
+                            width: 56,
+                            child: Center(
+                              child: GestureDetector(
+                                onTap: onCompose,
+                                behavior: HitTestBehavior.opaque,
+                                child: Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE86A1C),
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black
+                                            .withValues(alpha: 0.25),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(Icons.add,
+                                      color: Colors.white, size: 30),
+                                ),
+                              ),
+                            ),
+                          )
                         else
                           Expanded(child: _NavItem(
                             icon: _HomePageState

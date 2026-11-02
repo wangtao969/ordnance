@@ -11,8 +11,11 @@ import '../system_actions.dart';
 import '../weather_api.dart';
 import '../notify_api.dart';
 import '../sensors_api.dart';
+import '../location_flow.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/map_preview.dart';
 import '../widgets/app_top_bar.dart';
+import 'community_range_screen.dart';
 import 'gun_picker_dialog.dart';
 
 /// 靶场行程：一次出行的容器，只包起枪、弹药备注与关联成绩。
@@ -310,6 +313,16 @@ class _RangeTripDetailScreenState extends State<RangeTripDetailScreen> {
             if (trip.place.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(trip.place),
+              Builder(
+                builder: (_) {
+                  final coords = parseLatLon(trip.place);
+                  if (coords == null) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: MapPreview(lat: coords.lat, lon: coords.lon),
+                  );
+                },
+              ),
             ],
             if (trip.gunNames.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -340,9 +353,32 @@ class _RangeTripDetailScreenState extends State<RangeTripDetailScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            Text(tr('trip_scores'),
-                style:
-                    const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(tr('trip_scores'),
+                      style: const TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.bold)),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    if (communityStore.current == null) {
+                      showAppToast(
+                          context, tr('login_required_body'));
+                      return;
+                    }
+                    final result =
+                        await showScoreDialog(context, presetTrip: trip);
+                    if (result == null || !mounted) return;
+                    await handleSavedScore(context, result,
+                        tripLink: trip, onTripChanged: widget.onChanged);
+                    if (mounted) setState(() {});
+                  },
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text(tr('trip_add_score')),
+                ),
+              ],
+            ),
             const SizedBox(height: 8),
             if (linked.isEmpty && missing == 0)
               Text(tr('trip_scores_empty'),
@@ -585,6 +621,22 @@ class _RangeTripAddPageState extends State<RangeTripAddPage> {
   final _scoreIds = <String>{};
   String _date = '';
   TimeOfDay? _time;
+  bool _locating = false;
+  ({double lat, double lon})? _locCoords;
+  String? _locName;
+
+  /// 地点栏改动时：手动填了经纬度就跟手填的走；改成别的文字且
+  /// 不是定位填的地名时，丢掉旧定位，避免预览停留在旧坐标上。
+  void _onPlaceChanged() {
+    final text = _placeCtrl.text.trim();
+    if (_locCoords != null &&
+        text != _locName &&
+        parseLatLon(text) == null) {
+      _locCoords = null;
+      _locName = null;
+    }
+    setState(() {});
+  }
 
   @override
   void initState() {
@@ -592,6 +644,7 @@ class _RangeTripAddPageState extends State<RangeTripAddPage> {
     final now = DateTime.now();
     _date =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    _placeCtrl.addListener(_onPlaceChanged);
   }
 
   @override
@@ -626,23 +679,35 @@ class _RangeTripAddPageState extends State<RangeTripAddPage> {
     setState(() => _time = picked);
   }
 
-  /// 定位填地点：先要定位权限，成功把经纬度填入地点栏。
+  /// 定位填地点：拉系统授权（用途说明 + 拒绝后去设置入口），
+  /// 成功后填地名（反查不到回落经纬度），并在下方显示地图预览。
   Future<void> _locate() async {
-    final ok = await requestLocationPermission();
-    if (!mounted) return;
-    if (!ok) {
-      showAppToast(context, tr('compose_location_denied'));
-      return;
+    if (_locating) return;
+    setState(() => _locating = true);
+    try {
+      final ok = await ensureLocationPermission(context);
+      if (!mounted) return;
+      if (!ok) return;
+      final pos = await fetchCurrentFix();
+      if (!mounted) return;
+      final fix = pos.value;
+      if (fix == null) {
+        showAppToast(context, tr(locErrorKey(pos.error)));
+        return;
+      }
+      final name = await reverseGeocode(fix.latitude, fix.longitude);
+      if (!mounted) return;
+      final text = name ??
+          '${fix.latitude.toStringAsFixed(5)}, ${fix.longitude.toStringAsFixed(5)}';
+      setState(() {
+        _locCoords = (lat: fix.latitude, lon: fix.longitude);
+        _locName = text;
+        _placeCtrl.text = text;
+      });
+      showAppToast(context, tr('trip_located'));
+    } finally {
+      if (mounted) setState(() => _locating = false);
     }
-    final pos = await getGpsPosition();
-    if (!mounted) return;
-    if (pos.value == null) {
-      showAppToast(context, tr('compose_location_failed'));
-      return;
-    }
-    setState(() => _placeCtrl.text =
-        '${pos.value!.latitude.toStringAsFixed(5)}, ${pos.value!.longitude.toStringAsFixed(5)}');
-    showAppToast(context, tr('trip_located'));
   }
 
   Future<void> _addGun() async {
@@ -711,10 +776,34 @@ class _RangeTripAddPageState extends State<RangeTripAddPage> {
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton(
-                  onPressed: _locate,
-                  child: Text(tr('trip_locate')),
+                  onPressed: _locating ? null : _locate,
+                  child: _locating
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child:
+                              CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(tr('trip_locate')),
                 ),
               ],
+            ),
+            Builder(
+              builder: (_) {
+                final text = _placeCtrl.text.trim();
+                final coords = text.isEmpty
+                    ? null
+                    : (parseLatLon(text) ?? _locCoords);
+                if (coords == null) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: MapPreview(
+                    lat: coords.lat,
+                    lon: coords.lon,
+                    showLabel: false,
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 12),
             Text(tr('trip_guns'),

@@ -4,10 +4,13 @@ import '../widgets/app_toast.dart';
 import 'package:flutter/services.dart';
 import '../community_store.dart';
 import '../i18n.dart';
+import '../location_flow.dart';
 import '../system_actions.dart';
 import '../widgets/app_top_bar.dart';
 import '../widgets/community_theme.dart';
 import '../widgets/level_badge.dart';
+import '../widgets/score_grade_chip.dart';
+import '../widgets/map_preview.dart';
 import '../widgets/poll_card.dart';
 import 'community_board_screen.dart';
 import 'community_profile_screen.dart';
@@ -317,9 +320,22 @@ class _CommunityPostDetailScreenState
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Text(p.title,
-                        style: const TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold)),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(p.title,
+                              style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                        // 靶场成绩公开动态的系统档位徽章。
+                        if (p.scoreGrade.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          ScoreGradeChip(grade: p.scoreGrade),
+                        ],
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     if (p.content.isNotEmpty) _richContent(p.content),
                     if (p.tags.isNotEmpty) ...[
@@ -355,19 +371,30 @@ class _CommunityPostDetailScreenState
                       ],
                     ],
                     // 发帖附件行（tags/图片区之后）：定位、天气快照、视频播放。
+                    // 定位是经纬度时显示地图预览 + 地名（反查不到回落经纬度），
+                    // 纯地名时仍按原样显示文字。
                     if (p.location.isNotEmpty) ...[
                       const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(Icons.location_on_outlined,
-                              size: 16, color: grey),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(p.location,
-                                style: TextStyle(
-                                    color: grey, fontSize: 13)),
-                          ),
-                        ],
+                      Builder(
+                        builder: (_) {
+                          final coords = parseLatLon(p.location);
+                          if (coords == null) {
+                            return Row(
+                              children: [
+                                Icon(Icons.location_on_outlined,
+                                    size: 16, color: grey),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(p.location,
+                                      style: TextStyle(
+                                          color: grey, fontSize: 13)),
+                                ),
+                              ],
+                            );
+                          }
+                          return MapPreview(
+                              lat: coords.lat, lon: coords.lon);
+                        },
                       ),
                     ],
                     if (p.weather.isNotEmpty) ...[

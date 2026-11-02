@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'i18n.dart';
+import 'score_grade.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -411,6 +412,22 @@ class RangeScore {
   /// 指南针记下的射向（空=未记），如“123° SE”。
   final String heading;
 
+  /// 靶纸落点图：归一化坐标 [-1,1] 的 [x, y] 对；旧记录默认空。
+  final List<List<double>> shotPoints;
+
+  /// 落点图每环一步的厘米数（默认 5），散布换算用。
+  final double gridCm;
+
+  /// 系统自动档位（S/A/B/C/D，'' = 无档）：保存时按当时散布算好存下；
+  /// 3 发以下或无散布不给档。
+  final String grade;
+
+  /// 公开开关（opt-in，默认私密）：true = 已发进社区动态流。
+  final bool isPublic;
+
+  /// 公开后对应的动态 id（取消公开时按它删帖）；私密时为 null。
+  final String? postId;
+
   RangeScore({
     String? id,
     required this.gunName,
@@ -428,8 +445,61 @@ class RangeScore {
     this.wind = '',
     this.batchNo = '',
     this.heading = '',
+    List<List<double>>? shotPoints,
+    this.gridCm = 5,
+    this.grade = '',
+    this.isPublic = false,
+    this.postId,
   })  : id = id ?? DateTime.now().microsecondsSinceEpoch.toString(),
+        shotPoints = shotPoints ?? [],
         date = date ?? DateTime.now();
+
+  RangeScore copyWith({
+    String? gunName,
+    int? distance,
+    int? shots,
+    double? groupSize,
+    DateTime? date,
+    String? note,
+    String? caliber,
+    String? ammo,
+    String? position,
+    String? target,
+    String? score,
+    String? weather,
+    String? wind,
+    String? batchNo,
+    String? heading,
+    List<List<double>>? shotPoints,
+    double? gridCm,
+    String? grade,
+    bool? isPublic,
+    String? postId,
+    bool clearPostId = false,
+  }) =>
+      RangeScore(
+        id: id,
+        gunName: gunName ?? this.gunName,
+        distance: distance ?? this.distance,
+        shots: shots ?? this.shots,
+        groupSize: groupSize ?? this.groupSize,
+        date: date ?? this.date,
+        note: note ?? this.note,
+        caliber: caliber ?? this.caliber,
+        ammo: ammo ?? this.ammo,
+        position: position ?? this.position,
+        target: target ?? this.target,
+        score: score ?? this.score,
+        weather: weather ?? this.weather,
+        wind: wind ?? this.wind,
+        batchNo: batchNo ?? this.batchNo,
+        heading: heading ?? this.heading,
+        shotPoints: shotPoints ?? this.shotPoints,
+        gridCm: gridCm ?? this.gridCm,
+        grade: grade ?? this.grade,
+        isPublic: isPublic ?? this.isPublic,
+        postId: clearPostId ? null : (postId ?? this.postId),
+      );
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -448,6 +518,11 @@ class RangeScore {
         'wind': wind,
         'batchNo': batchNo,
         'heading': heading,
+        'shotPoints': shotPoints,
+        'gridCm': gridCm,
+        'grade': grade,
+        'isPublic': isPublic,
+        'postId': postId,
       };
 
   /// 旧记录没有 id 时的稳定派生：同一条成绩重读后 id 不变，
@@ -463,25 +538,54 @@ class RangeScore {
     return 'legacy_$hash';
   }
 
-  static RangeScore fromJson(Map<String, dynamic> j) => RangeScore(
-        id: j['id'] as String? ?? _legacyScoreId(j),
-        gunName: j['gunName'] as String? ?? '',
-        distance: j['distance'] as int? ?? 100,
-        shots: j['shots'] as int? ?? 5,
-        groupSize: (j['groupSize'] as num? ?? 0).toDouble(),
-        date:
-            DateTime.tryParse(j['date'] as String? ?? '') ?? DateTime.now(),
-        note: j['note'] as String? ?? '',
-        caliber: j['caliber'] as String? ?? '',
-        ammo: j['ammo'] as String? ?? '',
-        position: j['position'] as String? ?? '',
-        target: j['target'] as String? ?? '',
-        score: j['score'] as String? ?? '',
-        weather: j['weather'] as String? ?? '',
-        wind: j['wind'] as String? ?? '',
-        batchNo: j['batchNo'] as String? ?? '',
-        heading: j['heading'] as String? ?? '',
-      );
+  static RangeScore fromJson(Map<String, dynamic> j) {
+    final shots = j['shots'] as int? ?? 5;
+    final distance = j['distance'] as int? ?? 100;
+    final groupSize = (j['groupSize'] as num? ?? 0).toDouble();
+    final gridCm = (j['gridCm'] as num? ?? 5).toDouble();
+    final points = (j['shotPoints'] as List? ?? [])
+        .map((e) {
+          final pair = (e as List? ?? []);
+          if (pair.length < 2) return <double>[0, 0];
+          return <double>[
+            ((pair[0] as num).toDouble()).clamp(-1.0, 1.0),
+            ((pair[1] as num).toDouble()).clamp(-1.0, 1.0),
+          ];
+        })
+        .toList();
+    // 旧记录没有 grade 字段时按现有散布现算；无散布则无档。
+    final grade = j['grade'] as String? ??
+        (gradeForScore(
+                shots: shots,
+                distance: distance,
+                groupSize: groupSize,
+                points: points,
+                gridCm: gridCm) ??
+            '');
+    return RangeScore(
+      id: j['id'] as String? ?? _legacyScoreId(j),
+      gunName: j['gunName'] as String? ?? '',
+      distance: distance,
+      shots: shots,
+      groupSize: groupSize,
+      date: DateTime.tryParse(j['date'] as String? ?? '') ?? DateTime.now(),
+      note: j['note'] as String? ?? '',
+      caliber: j['caliber'] as String? ?? '',
+      ammo: j['ammo'] as String? ?? '',
+      position: j['position'] as String? ?? '',
+      target: j['target'] as String? ?? '',
+      score: j['score'] as String? ?? '',
+      weather: j['weather'] as String? ?? '',
+      wind: j['wind'] as String? ?? '',
+      batchNo: j['batchNo'] as String? ?? '',
+      heading: j['heading'] as String? ?? '',
+      shotPoints: points,
+      gridCm: gridCm,
+      grade: grade,
+      isPublic: j['isPublic'] as bool? ?? false,
+      postId: j['postId'] as String?,
+    );
+  }
 }
 
 class CommunityComment {
@@ -570,6 +674,10 @@ class CommunityPost {
   /// 成就自动动态标记：'' = 普通动态；非空 = 成就 id，内容为成就获得动态。
   String achievement;
 
+  /// 靶场成绩公开动态的系统档位（S/A/B/C/D，'' = 非成绩动态）：
+  /// 卡片上显示档位徽章，评论走普通动态链路。
+  String scoreGrade;
+
   CommunityPost({
     required this.id,
     required this.title,
@@ -596,6 +704,7 @@ class CommunityPost {
     List<String>? pollOptions,
     Map<String, int>? pollVoters,
     this.achievement = '',
+    this.scoreGrade = '',
   })  : images = images ?? [],
         likedBy = likedBy ?? <String>{},
         favoritedBy = favoritedBy ?? <String>{},
@@ -636,6 +745,7 @@ class CommunityPost {
         'pollOptions': pollOptions,
         'pollVoters': pollVoters,
         'achievement': achievement,
+        'scoreGrade': scoreGrade,
       };
 
   static CommunityPost fromJson(Map<String, dynamic> j) => CommunityPost(
@@ -672,6 +782,7 @@ class CommunityPost {
         pollVoters: (j['pollVoters'] as Map? ?? {})
             .map((k, v) => MapEntry(k.toString(), (v as num).toInt())),
         achievement: j['achievement'] as String? ?? '',
+        scoreGrade: j['scoreGrade'] as String? ?? '',
       );
 }
 
@@ -1392,6 +1503,16 @@ class CommunityStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 按 id 原位替换一条成绩（编辑落点图/公开开关用），找不到不写。
+  void updateRangeScore(RangeScore oldScore, RangeScore newScore) {
+    final me = current;
+    if (me == null) return;
+    final idx = me.rangeScores.indexWhere((r) => r.id == oldScore.id);
+    if (idx < 0) return;
+    me.rangeScores[idx] = newScore;
+    notifyListeners();
+  }
+
   void toggleBoardFollow(String board) {
     final me = current;
     if (me == null) return;
@@ -1529,6 +1650,7 @@ class CommunityStore extends ChangeNotifier {
     String weather = '',
     String videoPath = '',
     List<String> pollOptions = const [],
+    String scoreGrade = '',
   }) {
     final author = current;
     if (author == null) return tr('store_err_not_logged');
@@ -1557,6 +1679,7 @@ class CommunityStore extends ChangeNotifier {
       weather: weather,
       videoPath: videoPath,
       pollOptions: pollOptions,
+      scoreGrade: scoreGrade,
     );
     posts.insert(0, post);
     draft = null;

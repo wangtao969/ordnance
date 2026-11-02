@@ -72,6 +72,17 @@ Future<bool> setAlarmClock({
   }
 }
 
+/// 打开应用设置页（ACTION_APPLICATION_DETAILS_SETTINGS）：定位被
+/// 永久拒绝后由此入口让用户手动开权限；无设置应用接手时返回 false。
+Future<bool> openAppSettings() async {
+  try {
+    return await _systemChannel.invokeMethod<bool>('openAppSettings') ??
+        false;
+  } catch (_) {
+    return false;
+  }
+}
+
 /// 视频附件系统播放（ACTION_VIEW + FileProvider）：文件不存在或无播放
 /// 应用时返回 false，调用方显示可读提示，不闪退。
 Future<bool> openVideoFile(String path) async {

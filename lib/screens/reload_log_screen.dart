@@ -12,6 +12,7 @@ import 'reload_cost_screen.dart';
 import '../widgets/glass_dialog.dart';
 import '../i18n.dart';
 import '../weather_api.dart';
+import '../location_flow.dart';
 import '../sensors_api.dart';
 import '../bullet_profiles.dart';
 import '../english_terms.dart';
@@ -247,26 +248,29 @@ class _ReloadLogScreenState extends State<ReloadLogScreen> {
     if (_weatherLoading) return;
     setState(() => _weatherLoading = true);
     try {
-      final ok = await requestLocationPermission();
+      final ok = await ensureLocationPermission(context);
       if (!mounted) return;
       if (!ok) {
         setState(() => _weatherFailed = true);
-        showAppToast(context, tr('compose_location_denied'));
         return;
       }
-      final pos = await getGpsPosition();
+      final pos = await fetchCurrentFix();
       if (!mounted) return;
       if (pos.value == null) {
         setState(() => _weatherFailed = true);
-        showAppToast(context, tr('compose_location_failed'));
+        showAppToast(context, tr(locErrorKey(pos.error)));
         return;
       }
       final w = await fetchWeather(
           pos.value!.latitude, pos.value!.longitude);
       if (!mounted) return;
+      final name = await reverseGeocode(
+          pos.value!.latitude, pos.value!.longitude);
+      if (!mounted) return;
       setState(() {
         _weatherCtrl.text = buildWeatherSnapshot(w,
-            '${pos.value!.latitude.toStringAsFixed(5)}, ${pos.value!.longitude.toStringAsFixed(5)}');
+            name ??
+                '${pos.value!.latitude.toStringAsFixed(5)}, ${pos.value!.longitude.toStringAsFixed(5)}');
         _weatherFailed = false;
       });
     } catch (_) {

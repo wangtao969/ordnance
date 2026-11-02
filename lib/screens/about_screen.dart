@@ -124,6 +124,7 @@ class AboutScreen extends StatelessWidget {
             tr('about_hist_33'),
             tr('about_hist_34'),
             tr('about_hist_35'),
+            tr('about_hist_36'),
           ], grey, icon: Icons.system_update_alt),
           Card(
             child: ListTile(

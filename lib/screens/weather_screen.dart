@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../i18n.dart';
+import '../location_flow.dart';
 import '../range_trip_data.dart';
 import '../tools_units.dart';
 import '../sensors_api.dart';
@@ -49,7 +50,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
       _loading = true;
       _error = null;
     });
-    final granted = await requestLocationPermission();
+    final granted = await ensureLocationPermission(context);
     if (!granted) {
       if (mounted) {
         setState(() {
@@ -70,8 +71,13 @@ class _WeatherScreenState extends State<WeatherScreen> {
       return;
     }
     final v = fix.value!;
-    await _fetch(v.latitude, v.longitude,
-        '${v.latitude.toStringAsFixed(4)}, ${v.longitude.toStringAsFixed(4)}');
+    final name = await reverseGeocode(v.latitude, v.longitude);
+    if (!mounted) return;
+    await _fetch(
+        v.latitude,
+        v.longitude,
+        name ??
+            '${v.latitude.toStringAsFixed(4)}, ${v.longitude.toStringAsFixed(4)}');
   }
 
   Future<void> _fetch(double lat, double lon, String place) async {

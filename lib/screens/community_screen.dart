@@ -1,4 +1,3 @@
-import 'dart:ui';
 import '../widgets/app_toast.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +6,7 @@ import '../i18n.dart';
 import '../widgets/app_top_bar.dart';
 import '../widgets/community_theme.dart';
 import '../widgets/level_badge.dart';
+import '../widgets/score_grade_chip.dart';
 import 'community_account_dialogs.dart';
 import 'community_board_screen.dart';
 import 'community_compose_screen.dart';
@@ -337,11 +337,24 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text(p.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15)),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(p.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15)),
+                        ),
+                        // 靶场成绩公开动态的系统档位徽章。
+                        if (p.scoreGrade.isNotEmpty) ...[
+                          const SizedBox(width: 6),
+                          ScoreGradeChip(grade: p.scoreGrade),
+                        ],
+                      ],
+                    ),
                     if (p.content.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(p.content,
@@ -490,9 +503,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     ),
                   ),
                   Expanded(
-                    child: Stack(
-                      children: [
-                        ListView(
+                    child: ListView(
                           padding:
                               const EdgeInsets.fromLTRB(16, 8, 16, 110),
                           children: [
@@ -617,67 +628,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
                             const SizedBox(height: 8),
                           ],
                         ),
-                        // 动态页右下角发帖钮：大号圆形液态玻璃（草稿箱已去掉，
-                        // 草稿仍在发帖器里自动带出，不用单独入口）。
-                        Positioned(
-                          right: 16,
-                          bottom: 100,
-                          child: GestureDetector(
-                            onTap: _openComposer,
-                            child: ClipOval(
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(
-                                    sigmaX: 25, sigmaY: 25),
-                                child: Container(
-                                  width: 64,
-                                  height: 64,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: dark
-                                          ? [
-                                              const Color(0xFFC9A86A)
-                                                  .withValues(alpha: 0.85),
-                                              const Color(0xFF6B5B3E)
-                                                  .withValues(alpha: 0.60),
-                                            ]
-                                          : [
-                                              const Color(0xFF6B5B3E)
-                                                  .withValues(alpha: 0.85),
-                                              const Color(0xFF6B5B3E)
-                                                  .withValues(alpha: 0.60),
-                                            ],
-                                    ),
-                                    border: Border.all(
-                                      color: Colors.white
-                                          .withValues(alpha: 0.45),
-                                      width: 1.2,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black
-                                            .withValues(alpha: 0.18),
-                                        blurRadius: 16,
-                                        offset: const Offset(0, 6),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Icon(
-                                    Icons.edit_outlined,
-                                    size: 28,
-                                    color: dark
-                                        ? const Color(0xFF000000)
-                                        : Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ],
               ),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../community_store.dart';
 import '../data.dart';
@@ -19,7 +20,7 @@ import 'knife_detail_screen.dart';
 import 'knife_list_screen.dart';
 import '../weather_api.dart';
 import '../tools_units.dart';
-import '../sensors_api.dart';
+import '../location_flow.dart';
 import 'weather_screen.dart';
 
 class CatalogScreen extends StatefulWidget {
@@ -630,8 +631,8 @@ class _CatalogScreenState extends State<CatalogScreen> {
 }
 
 /// 首页细长条天气卡片：默认只显示一行提示，点按才要定位权限并拉取
-/// 当前位置天气（不在首页打开时擅自弹权限）；拉取成功后横向滚动播报
-/// 温度/湿度/风速风向，点卡片进天气详情页；失败点按重试。
+/// 当前位置天气（不在首页打开时擅自弹权限）；拉取成功后自动横向循环
+/// 滚动播报温度/湿度/风速风向/气压，点卡片进天气详情页；失败点按重试。
 class _HomeWeatherStrip extends StatefulWidget {
   const _HomeWeatherStrip();
 
@@ -644,6 +645,61 @@ class _HomeWeatherStripState extends State<_HomeWeatherStrip> {
   WeatherData? _w;
   bool _loading = false;
   bool _failed = false;
+
+  /// 自动滚动播报：文本复制两份无缝循环；内容短于可视宽时不滚动。
+  final _scrollCtrl = ScrollController();
+  final _scrollKey = GlobalKey();
+  Timer? _ticker;
+  String _tickerLine = '';
+  double _tickerLoopW = 0;
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    _scrollCtrl.dispose();
+    super.dispose();
+  }
+
+  double _textWidth(String text) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: const TextStyle(fontSize: 13)),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    return painter.width;
+  }
+
+  /// 文本或可视宽变化时重算：需要滚动才起定时器，否则停在起点。
+  void _syncTicker() {
+    if (_w == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _w == null) return;
+      final line = _lineText();
+      final viewW = _scrollKey.currentContext?.size?.width;
+      if (viewW == null) return;
+      final loopW = _textWidth(line) + 48;
+      if (loopW <= viewW) {
+        _ticker?.cancel();
+        _ticker = null;
+        return;
+      }
+      if (_ticker != null && line == _tickerLine && loopW == _tickerLoopW) {
+        return;
+      }
+      _tickerLine = line;
+      _tickerLoopW = loopW;
+      _ticker?.cancel();
+      if (_scrollCtrl.hasClients) _scrollCtrl.jumpTo(0);
+      _ticker = Timer.periodic(const Duration(milliseconds: 50), (_) {
+        if (!mounted || !_scrollCtrl.hasClients) return;
+        final next = _scrollCtrl.offset + 1.5;
+        if (next >= loopW) {
+          _scrollCtrl.jumpTo(0);
+        } else {
+          _scrollCtrl.jumpTo(next);
+        }
+      });
+    });
+  }
 
   String _lineText() {
     final w = _w;
@@ -666,13 +722,13 @@ class _HomeWeatherStripState extends State<_HomeWeatherStrip> {
       _failed = false;
     });
     try {
-      final ok = await requestLocationPermission();
+      final ok = await ensureLocationPermission(context);
       if (!mounted) return;
       if (!ok) {
         setState(() => _failed = true);
         return;
       }
-      final pos = await getGpsPosition();
+      final pos = await fetchCurrentFix();
       if (!mounted) return;
       if (pos.value == null) {
         setState(() => _failed = true);
@@ -681,6 +737,7 @@ class _HomeWeatherStripState extends State<_HomeWeatherStrip> {
       final w = await fetchWeather(pos.value!.latitude, pos.value!.longitude);
       if (!mounted) return;
       setState(() => _w = w);
+      _syncTicker();
     } catch (_) {
       if (mounted) setState(() => _failed = true);
     } finally {
@@ -725,11 +782,26 @@ class _HomeWeatherStripState extends State<_HomeWeatherStrip> {
                 Expanded(
                   child: ValueListenableBuilder<Map<String, String>>(
                     valueListenable: unitPrefsNotifier,
-                    builder: (_, __, ___) => SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Text(_lineText(),
-                          style: const TextStyle(fontSize: 13)),
-                    ),
+                    builder: (_, __, ___) {
+                      _syncTicker();
+                      final line = _lineText();
+                      return SingleChildScrollView(
+                        key: _scrollKey,
+                        controller: _scrollCtrl,
+                        scrollDirection: Axis.horizontal,
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(line,
+                                style: const TextStyle(fontSize: 13)),
+                            const SizedBox(width: 48),
+                            Text(line,
+                                style: const TextStyle(fontSize: 13)),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 )
               else

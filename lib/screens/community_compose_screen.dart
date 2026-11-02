@@ -3,8 +3,9 @@ import '../widgets/app_toast.dart';
 import 'package:flutter/services.dart';
 import '../community_store.dart';
 import '../i18n.dart';
-import '../sensors_api.dart';
+import '../location_flow.dart';
 import '../weather_api.dart';
+import '../widgets/map_preview.dart';
 import '../widgets/liquid_glass_nav.dart';
 
 /// 发帖器（Threads 风格排版）：顶部左边取消、右边液态玻璃发布按钮；
@@ -31,6 +32,7 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
   final _images = <Uint8List>[];
   // 附件（不进草稿）：定位文字、天气快照文字、视频沙盒路径。
   String _location = '';
+  ({double lat, double lon})? _locCoords;
   String _weather = '';
   String _videoPath = '';
   // 投票（第 11 项，不进草稿）：开关 + 2–4 个选项框。
@@ -144,36 +146,36 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
     }
   }
 
-  /// 定位附件：先申请定位权限，再取 GPS 经纬度（5 位小数）存文字；
+  /// 定位附件：拉系统授权（用途说明 + 拒绝后去设置入口），
+  /// 成功后存地名（反查不到回落经纬度），下方显示地图预览；
   /// 被拒或失败给可读提示，不阻塞发帖。
   Future<void> _addLocation() async {
-    final granted = await requestLocationPermission();
-    if (!granted) {
-      if (mounted) showAppToast(context, tr('compose_location_denied'));
-      return;
-    }
-    final fix = await getGpsPosition();
+    final granted = await ensureLocationPermission(context);
+    if (!granted) return;
+    final fix = await fetchCurrentFix();
     final v = fix.value;
     if (v == null) {
-      if (mounted) showAppToast(context, tr('compose_location_failed'));
+      if (mounted) showAppToast(context, tr(locErrorKey(fix.error)));
       return;
     }
-    setState(() => _location =
-        '${v.latitude.toStringAsFixed(5)}, ${v.longitude.toStringAsFixed(5)}');
+    final name = await reverseGeocode(v.latitude, v.longitude);
+    if (!mounted) return;
+    setState(() {
+      _locCoords = (lat: v.latitude, lon: v.longitude);
+      _location = name ??
+          '${v.latitude.toStringAsFixed(5)}, ${v.longitude.toStringAsFixed(5)}';
+    });
   }
 
   /// 天气快照附件：GPS → Open-Meteo 实况 → buildWeatherSnapshot
   /// （复用天气系统格式）；只填天气字段，不顺带写定位。
   Future<void> _addWeather() async {
-    final granted = await requestLocationPermission();
-    if (!granted) {
-      if (mounted) showAppToast(context, tr('compose_location_denied'));
-      return;
-    }
-    final fix = await getGpsPosition();
+    final granted = await ensureLocationPermission(context);
+    if (!granted) return;
+    final fix = await fetchCurrentFix();
     final v = fix.value;
     if (v == null) {
-      if (mounted) showAppToast(context, tr('compose_location_failed'));
+      if (mounted) showAppToast(context, tr(locErrorKey(fix.error)));
       return;
     }
     try {
@@ -535,7 +537,25 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
             if (_location.isNotEmpty) ...[
               const SizedBox(height: 10),
               _attachedRow(Icons.location_on_outlined, _location,
-                  () => setState(() => _location = '')),
+                  () => setState(() {
+                        _location = '';
+                        _locCoords = null;
+                      })),
+              Builder(
+                builder: (_) {
+                  final coords =
+                      parseLatLon(_location) ?? _locCoords;
+                  if (coords == null) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: MapPreview(
+                      lat: coords.lat,
+                      lon: coords.lon,
+                      showLabel: false,
+                    ),
+                  );
+                },
+              ),
             ],
             if (_weather.isNotEmpty) ...[
               const SizedBox(height: 8),
